@@ -48,6 +48,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         if (RegexUtils.isPhoneInvalid(phone)) {
             return Result.fail("手机号格式错误！");
         }
+        // 限流检查：60秒内只能发送一次
+        String limitKey = SMS_LIMIT_KEY + phone;
+        Boolean isLimit = stringRedisTemplate.opsForValue().setIfAbsent(limitKey, "1", SMS_LIMIT_TTL, TimeUnit.SECONDS);
+        if (Boolean.FALSE.equals(isLimit)) {
+            Long ttl = stringRedisTemplate.getExpire(limitKey, TimeUnit.SECONDS);
+            return Result.fail("验证码发送过于频繁，请" + ttl + "秒后再试！");
+        }
         // 生成验证码
         String code = RandomUtil.randomNumbers(6);
         // 保存验证码到redis
