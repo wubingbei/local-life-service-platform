@@ -4,6 +4,7 @@ import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
+import com.github.benmanes.caffeine.cache.Cache;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.llsp.dto.Result;
 import com.llsp.entity.Shop;
@@ -39,19 +40,37 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
     private StringRedisTemplate stringRedisTemplate;
     @Resource
     private CacheClient cacheClient;
+    @Resource
+    private Cache<Long, Object> shopCache;
 
     @Override
     public Result queryById(Long id) {
-        // 缓存穿透
-        Shop shop = cacheClient.queryWithPassThrough(CACHE_SHOP_KEY, id, Shop.class, this::getById, CACHE_SHOP_TTL, TimeUnit.MINUTES);
-        // 互斥锁解决缓存击穿
-        // Shop shop = queryWithMutex(id);
-        // 逻辑过期解决缓存击穿
-        // Shop shop = cacheClient.queryWithLogicalExpire(CACHE_SHOP_KEY, id, Shop.class, this::getById, CACHE_SHOP_TTL, TimeUnit.MINUTES);
+        // 一级缓存：Caffeine本地缓存
+        Shop shop = getFromLocalCache(id);
+        if (shop != null) {
+            return Result.ok(shop);
+        }
+        // 二级缓存：Redis分布式缓存
+        shop = cacheClient.queryWithPassThrough(CACHE_SHOP_KEY, id, Shop.class, this::getById, CACHE_SHOP_TTL, TimeUnit.MINUTES);
         if (shop == null) {
             return Result.fail("店铺不存在");
         }
+        // 将数据写入一级缓存
+        putToLocalCache(id, shop);
         return Result.ok(shop);
+    }
+
+    private Shop getFromLocalCache(Long id) {
+        Object obj = shopCache.getIfPresent(id);
+        return obj instanceof Shop ? (Shop) obj : null;
+    }
+
+    private void putToLocalCache(Long id, Shop shop) {
+        shopCache.put(id, shop);
+    }
+
+    private void removeFromLocalCache(Long id) {
+        shopCache.invalidate(id);
     }
 
     private static final ExecutorService executor = Executors.newFixedThreadPool(10);
@@ -218,8 +237,10 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
         }
         // 1.更新数据库
         updateById(shop);
-        // 2.删除缓存
-        stringRedisTemplate.delete(CACHE_SHOP_KEY + shop.getId());
+        // 2.删除一级缓存（本地）
+        removeFromLocalCache(id);
+        // 3.删除二级缓存（Redis）
+        stringRedisTemplate.delete(CACHE_SHOP_KEY + id);
         return Result.ok();
     }
 

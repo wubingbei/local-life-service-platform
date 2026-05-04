@@ -40,6 +40,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
     /**
      * 发送手机验证码
      * @param phone 手机号
+     * @return Result
      */
     @Override
     public Result sendCode(String phone) {
