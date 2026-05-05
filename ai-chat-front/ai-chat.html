@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 聊天助手</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f5f5f5;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .token-section {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .token-section input {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 6px;
+            width: 200px;
+            font-size: 14px;
+        }
+
+        .token-section button {
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+        .token-section button:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .main-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 280px;
+            background: white;
+            border-right: 1px solid #e0e0e0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            padding: 15px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            gap: 10px;
+        }
+
+        .sidebar-header button {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .btn-new-chat {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-new-chat:hover {
+            background: #5a6fd6;
+        }
+
+        .chat-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .chat-item {
+            padding: 12px;
+            margin-bottom: 8px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-item:hover {
+            background: #e9ecef;
+        }
+
+        .chat-item.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .chat-item-info {
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .chat-item-id {
+            font-size: 12px;
+            color: #666;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .chat-item.active .chat-item-id {
+            color: rgba(255,255,255,0.8);
+        }
+
+        .chat-item-delete {
+            padding: 5px 10px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .chat-item:hover .chat-item-delete {
+            opacity: 1;
+        }
+
+        .chat-item.active .chat-item-delete {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #f0f2f5;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .message {
+            max-width: 75%;
+            padding: 14px 18px;
+            border-radius: 16px;
+            line-height: 1.6;
+            word-wrap: break-word;
+            position: relative;
+        }
+
+        .message.user {
+            align-self: flex-end;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-bottom-right-radius: 6px;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+        }
+
+        .message.assistant {
+            align-self: flex-start;
+            background: white;
+            color: #333;
+            border-bottom-left-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .message-role {
+            font-size: 12px;
+            opacity: 0.7;
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+
+        .message-content {
+            font-size: 14px;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .message-content table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            margin: 8px 0;
+            overflow-x: auto;
+            display: block;
+        }
+
+        .message-content th,
+        .message-content td {
+            border: 1px solid #e0e0e0;
+            padding: 6px 8px;
+            text-align: left;
+            min-width: 80px;
+        }
+
+        .message-content th {
+            background: #f5f5f5;
+            font-weight: 600;
+        }
+
+        .message-content tr:nth-child(even) {
+            background: #fafafa;
+        }
+
+        .message-content code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+            font-size: 12px;
+        }
+
+        .message-content pre {
+            background: #2d2d2d;
+            color: #ccc;
+            padding: 12px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .message-content pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        .table-container {
+            max-height: 300px;
+            overflow-y: auto;
+            overflow-x: auto;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            margin: 8px 0;
+        }
+
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 8px 0;
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+        }
+
+        .typing-dots .dot {
+            width: 8px;
+            height: 8px;
+            background: #999;
+            border-radius: 50%;
+            animation: typing-bounce 1.4s infinite ease-in-out;
+        }
+
+        .typing-dots .dot:nth-child(1) {
+            animation-delay: 0s;
+        }
+
+        .typing-dots .dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dots .dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing-bounce {
+            0%, 80%, 100% {
+                transform: scale(0.6);
+                opacity: 0.5;
+            }
+            40% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .empty-state {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            gap: 15px;
+        }
+
+        .empty-state-icon {
+            font-size: 60px;
+            opacity: 0.5;
+        }
+
+        .input-area {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            gap: 10px;
+        }
+
+        .input-area input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid #ddd;
+            border-radius: 24px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .input-area input:focus {
+            border-color: #667eea;
+        }
+
+        .input-area button {
+            padding: 12px 24px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 24px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+        .input-area button:hover {
+            background: #5a6fd6;
+        }
+
+        .input-area button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            width: 400px;
+            max-width: 90%;
+        }
+
+        .modal-content h3 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .modal-content input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .modal-buttons button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .btn-cancel {
+            background: #e0e0e0;
+            color: #333;
+        }
+
+        .btn-confirm {
+            background: #667eea;
+            color: white;
+        }
+
+        .toast {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            padding: 12px 20px;
+            background: #333;
+            color: white;
+            border-radius: 8px;
+            font-size: 14px;
+            z-index: 1001;
+            animation: slideIn 0.3s ease;
+        }
+
+        .toast.error {
+            background: #dc3545;
+        }
+
+        .toast.success {
+            background: #28a745;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .no-token-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255,255,255,0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+        }
+
+        .no-token-overlay.hidden {
+            display: none;
+        }
+
+        .no-token-box {
+            text-align: center;
+            padding: 40px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            max-width: 500px;
+        }
+
+        .no-token-box h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .no-token-box p {
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .no-token-box input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="no-token-overlay" id="tokenOverlay">
+        <div class="no-token-box">
+            <h2>请输入您的 Token</h2>
+            <p>为了识别您的身份并加载您的聊天记录，请先在下方输入您的用户 Token</p>
+            <input type="text" id="initialToken" placeholder="请输入 Token">
+            <button class="btn-confirm" onclick="setToken()" style="width: 100%; padding: 12px;">确认</button>
+        </div>
+    </div>
+
+    <div class="header">
+        <h1>🤖 AI 聊天助手</h1>
+        <div class="token-section">
+            <input type="text" id="tokenInput" placeholder="输入用户 Token">
+            <button onclick="loadChats()">加载会话</button>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <button class="btn-new-chat" onclick="createNewChat()">+ 新建会话</button>
+            </div>
+            <div class="chat-list" id="chatList">
+                <div style="text-align: center; color: #999; padding: 20px;">
+                    暂无会话记录
+                </div>
+            </div>
+        </div>
+
+        <div class="chat-area">
+            <div class="chat-messages" id="chatMessages">
+                <div class="empty-state" id="emptyState">
+                    <div class="empty-state-icon">💬</div>
+                    <div>选择一个会话开始聊天</div>
+                    <div style="font-size: 12px;">或点击"新建会话"开始新对话</div>
+                </div>
+            </div>
+
+            <div class="input-area">
+                <input type="text" id="messageInput" placeholder="输入消息..." onkeypress="handleKeyPress(event)">
+                <button id="sendBtn" onclick="sendMessage()">发送</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="loadMessagesModal">
+        <div class="modal-content">
+            <h3>加载指定会话记录</h3>
+            <input type="text" id="chatIdInput" placeholder="输入会话 ID">
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="closeModal()">取消</button>
+                <button class="btn-confirm" onclick="loadMessagesById()">加载</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentToken = '';
+        let currentChatId = '';
+        let isLoading = false;
+
+        function getBaseUrl() {
+            return 'http://localhost:8081';
+        }
+
+        function getHeaders() {
+            return {
+                'Content-Type': 'application/json',
+                'Authorization': currentToken
+            };
+        }
+
+        function setToken() {
+            const token = document.getElementById('initialToken').value.trim();
+            if (token) {
+                currentToken = token;
+                document.getElementById('tokenInput').value = token;
+                document.getElementById('tokenOverlay').classList.add('hidden');
+                loadChats();
+            } else {
+                showToast('请输入有效的 Token', 'error');
+            }
+        }
+
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+
+        async function loadChats() {
+            const token = document.getElementById('tokenInput').value.trim();
+            if (token) {
+                currentToken = token;
+            }
+
+            if (!currentToken) {
+                showToast('请先输入 Token', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${getBaseUrl()}/ai/chat/history`, {
+                    method: 'GET',
+                    headers: getHeaders()
+                });
+
+                if (!response.ok) {
+                    throw new Error('获取会话列表失败');
+                }
+
+                const result = await response.json();
+                renderChatList(result.data || []);
+                showToast('会话列表已加载', 'success');
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        function renderChatList(chats) {
+            const chatList = document.getElementById('chatList');
+
+            if (!chats || chats.length === 0) {
+                chatList.innerHTML = '<div style="text-align: center; color: #999; padding: 20px;">暂无会话记录</div>';
+                return;
+            }
+
+            chatList.innerHTML = chats.map(chatId => `
+                <div class="chat-item ${chatId === currentChatId ? 'active' : ''}" onclick="selectChat('${chatId}')">
+                    <div class="chat-item-info">
+                        <div class="chat-item-id">${chatId}</div>
+                    </div>
+                    <button class="chat-item-delete" onclick="event.stopPropagation(); deleteChat('${chatId}')">删除</button>
+                </div>
+            `).join('');
+        }
+
+        async function createNewChat() {
+            if (!currentToken) {
+                showToast('请先输入 Token', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${getBaseUrl()}/ai/chat/new`, {
+                    method: 'POST',
+                    headers: getHeaders()
+                });
+
+                if (!response.ok) {
+                    throw new Error('创建会话失败');
+                }
+
+                const result = await response.json();
+                const newChatId = result.data;
+
+                currentChatId = newChatId;
+                clearMessages();
+                loadChats();
+
+                showToast('新会话已创建', 'success');
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        function selectChat(chatId) {
+            currentChatId = chatId;
+            loadChatMessages(chatId);
+            loadChats();
+        }
+
+        async function loadChatMessages(chatId) {
+            if (!chatId) return;
+
+            try {
+                const response = await fetch(`${getBaseUrl()}/ai/chat/${chatId}/messages`, {
+                    method: 'GET',
+                    headers: getHeaders()
+                });
+
+                if (!response.ok) {
+                    throw new Error('获取消息记录失败');
+                }
+
+                const result = await response.json();
+                renderMessages(result.data || []);
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        async function loadMessagesById() {
+            const chatId = document.getElementById('chatIdInput').value.trim();
+            if (!chatId) {
+                showToast('请输入会话 ID', 'error');
+                return;
+            }
+
+            currentChatId = chatId;
+            closeModal();
+            clearMessages();
+            await loadChatMessages(chatId);
+        }
+
+        function renderMessages(messages) {
+            const messagesContainer = document.getElementById('chatMessages');
+            let emptyState = document.getElementById('emptyState');
+
+            if (!emptyState) {
+                emptyState = document.createElement('div');
+                emptyState.id = 'emptyState';
+                emptyState.className = 'empty-state';
+                emptyState.innerHTML = `
+                    <div class="empty-state-icon">💬</div>
+                    <div>选择一个会话开始聊天</div>
+                    <div style="font-size: 12px;">或点击"新建会话"开始新对话</div>
+                `;
+            }
+
+            if (!messages || messages.length === 0) {
+                emptyState.style.display = 'flex';
+                if (!messagesContainer.contains(emptyState)) {
+                    messagesContainer.appendChild(emptyState);
+                }
+                return;
+            }
+
+            emptyState.style.display = 'none';
+            if (messagesContainer.contains(emptyState)) {
+                messagesContainer.removeChild(emptyState);
+            }
+
+            while (messagesContainer.firstChild) {
+                messagesContainer.removeChild(messagesContainer.firstChild);
+            }
+
+            messages.forEach((msg, index) => {
+                console.log('Message[' + index + ']:', JSON.stringify(msg));
+                let role = 'assistant';
+                let isUser = false;
+                
+                if (msg.role) {
+                    role = msg.role.toLowerCase().trim();
+                    console.log('Role:', role);
+                    isUser = role === 'user' || role === 'human' || role === 'humanuser' || role === 'userrole' || role === 'user_message';
+                } else if (msg.user) {
+                    isUser = true;
+                    role = 'user';
+                } else if (index % 2 === 0) {
+                    isUser = true;
+                    role = 'user';
+                }
+                
+                console.log('Is User:', isUser);
+                
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${isUser ? 'user' : 'assistant'}`;
+                const content = formatMessageContent(msg.content);
+                messageDiv.innerHTML = `
+                    <div class="message-role">${isUser ? '我' : 'AI 助手'}</div>
+                    <div class="message-content">${content}</div>
+                `;
+                messagesContainer.appendChild(messageDiv);
+            });
+
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function clearMessages() {
+            const messagesContainer = document.getElementById('chatMessages');
+            const emptyState = document.getElementById('emptyState');
+            
+            while (messagesContainer.firstChild) {
+                if (messagesContainer.firstChild !== emptyState) {
+                    messagesContainer.removeChild(messagesContainer.firstChild);
+                } else {
+                    break;
+                }
+            }
+            
+            emptyState.style.display = 'flex';
+            if (!messagesContainer.contains(emptyState)) {
+                messagesContainer.appendChild(emptyState);
+            }
+        }
+
+        async function sendMessage() {
+            console.log('sendMessage called');
+            console.log('currentToken:', currentToken ? 'exists (' + currentToken.length + ' chars)' : 'empty');
+            console.log('currentChatId:', currentChatId ? currentChatId : 'empty');
+            console.log('isLoading:', isLoading);
+            
+            const messageInput = document.getElementById('messageInput');
+            const sendBtn = document.getElementById('sendBtn');
+            console.log('messageInput:', messageInput);
+            console.log('sendBtn:', sendBtn);
+            console.log('sendBtn.disabled:', sendBtn ? sendBtn.disabled : 'N/A');
+            
+            if (!currentToken) {
+                showToast('请先输入 Token', 'error');
+                return;
+            }
+
+            if (!currentChatId) {
+                showToast('请先选择或创建会话', 'error');
+                return;
+            }
+
+            const message = messageInput.value.trim();
+            console.log('message:', message);
+
+            if (!message) {
+                return;
+            }
+
+            if (isLoading) {
+                showToast('正在处理中，请稍候', 'error');
+                return;
+            }
+
+            isLoading = true;
+            sendBtn.disabled = true;
+            sendBtn.innerHTML = '<span class="loading"></span>';
+
+            const emptyState = document.getElementById('emptyState');
+            if (emptyState) {
+                emptyState.style.display = 'none';
+            }
+
+            const messagesContainer = document.getElementById('chatMessages');
+            const userMessageDiv = document.createElement('div');
+            userMessageDiv.className = 'message user';
+            userMessageDiv.innerHTML = `
+                <div class="message-role">我</div>
+                <div class="message-content">${escapeHtml(message)}</div>
+            `;
+            messagesContainer.appendChild(userMessageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+            messageInput.value = '';
+
+            const aiMessageDiv = document.createElement('div');
+            aiMessageDiv.className = 'message assistant';
+            aiMessageDiv.innerHTML = `
+                <div class="message-role">AI 助手</div>
+                <div class="message-content typing-indicator">
+                    <span class="typing-dots">
+                        <span class="dot"></span>
+                        <span class="dot"></span>
+                        <span class="dot"></span>
+                    </span>
+                </div>
+            `;
+            messagesContainer.appendChild(aiMessageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            
+            console.log('Sending message to server...');
+
+            try {
+                const response = await fetch(`${getBaseUrl()}/ai/chat/${currentChatId}/send?message=${encodeURIComponent(message)}`, {
+                    method: 'POST',
+                    headers: getHeaders()
+                });
+
+                if (!response.ok) {
+                    const errorResult = await response.json();
+                    throw new Error(errorResult.msg || '发送消息失败');
+                }
+
+                const result = await response.json();
+                const aiResponse = result.data;
+
+                const content = formatMessageContent(aiResponse);
+                aiMessageDiv.innerHTML = `
+                    <div class="message-role">AI 助手</div>
+                    <div class="message-content">${content}</div>
+                `;
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+            } catch (error) {
+                userMessageDiv.remove();
+                aiMessageDiv.remove();
+                showToast(error.message, 'error');
+            } finally {
+                isLoading = false;
+                sendBtn.disabled = false;
+                sendBtn.textContent = '发送';
+            }
+        }
+
+        async function deleteChat(chatId) {
+            if (!confirm('确定要删除这个会话吗？')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${getBaseUrl()}/ai/chat/${chatId}`, {
+                    method: 'DELETE',
+                    headers: getHeaders()
+                });
+
+                if (!response.ok) {
+                    throw new Error('删除会话失败');
+                }
+
+                if (currentChatId === chatId) {
+                    currentChatId = '';
+                    clearMessages();
+                }
+
+                loadChats();
+                showToast('会话已删除', 'success');
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        function openModal() {
+            document.getElementById('loadMessagesModal').classList.add('show');
+            document.getElementById('chatIdInput').value = '';
+        }
+
+        function closeModal() {
+            document.getElementById('loadMessagesModal').classList.remove('show');
+        }
+
+        function formatMessageContent(content) {
+            let escaped = escapeHtml(content);
+            
+            escaped = escaped.replace(/\n/g, '<br>');
+            
+            const tableRegex = /(\|\s*[^\|]+\s*)+\|/g;
+            const lines = content.split('\n');
+            const tableLines = lines.filter(line => line.trim().startsWith('|') && line.trim().endsWith('|'));
+            
+            if (tableLines.length >= 2) {
+                let tableHtml = '<div class="table-container"><table><thead><tr>';
+                const headerCells = tableLines[0].split('|').filter(cell => cell.trim());
+                headerCells.forEach(cell => {
+                    tableHtml += `<th>${escapeHtml(cell.trim())}</th>`;
+                });
+                tableHtml += '</tr></thead><tbody>';
+                
+                for (let i = 1; i < tableLines.length; i++) {
+                    tableHtml += '<tr>';
+                    const cells = tableLines[i].split('|').filter(cell => cell.trim());
+                    cells.forEach(cell => {
+                        tableHtml += `<td>${escapeHtml(cell.trim())}</td>`;
+                    });
+                    tableHtml += '</tr>';
+                }
+                
+                tableHtml += '</tbody></table></div>';
+                
+                const tableText = tableLines.join('\n');
+                escaped = escaped.replace(tableText, tableHtml);
+            }
+            
+            const inlineTablePattern = /\|([^|]+)\|/g;
+            const hasMultiplePipes = content.split('|').length > 4;
+            if (hasMultiplePipes && tableLines.length < 2) {
+                const tableParts = content.split('||');
+                if (tableParts.length >= 2) {
+                    let tableHtml = '<div class="table-container"><table><tbody>';
+                    tableParts.forEach((part, index) => {
+                        const cells = part.split('|').filter(cell => cell.trim());
+                        if (cells.length > 1) {
+                            tableHtml += '<tr>';
+                            cells.forEach(cell => {
+                                const cellClass = index === 0 ? 'th' : 'td';
+                                tableHtml += `<${cellClass}>${escapeHtml(cell.trim())}</${cellClass}>`;
+                            });
+                            tableHtml += '</tr>';
+                        }
+                    });
+                    tableHtml += '</tbody></table></div>';
+                    escaped = tableHtml;
+                }
+            }
+            
+            return escaped;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        document.getElementById('tokenInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                loadChats();
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const sendBtn = document.getElementById('sendBtn');
+            const messageInput = document.getElementById('messageInput');
+            
+            if (sendBtn && messageInput) {
+                console.log('All elements loaded successfully');
+                
+                sendBtn.addEventListener('click', function() {
+                    console.log('Send button clicked');
+                    sendMessage();
+                });
+                
+                messageInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        console.log('Enter pressed in input');
+                        sendMessage();
+                    }
+                });
+            } else {
+                console.error('Some elements not found');
+            }
+        });
+    </script>
+</body>
+</html>
