@@ -22,4 +22,9 @@ public class RedisConstants {
 
     public static final String SMS_LIMIT_KEY = "sms:limit:";
     public static final Long SMS_LIMIT_TTL = 60L;
+    
+    public static final String CHAT_HISTORY_KEY = "chat:history:";
+    public static final Long CHAT_HISTORY_TTL = 7L;
+    
+    public static final String CHAT_MEMORY_KEY = "chat:memory:";
 }

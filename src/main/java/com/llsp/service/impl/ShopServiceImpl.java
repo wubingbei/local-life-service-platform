@@ -4,6 +4,7 @@ import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.llsp.dto.Result;
@@ -182,8 +183,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
         // 2.判断是否存在
         if (StrUtil.isNotBlank(shopJson)){
             // 3.存在，直接返回
-            Shop shop = JSONUtil.toBean(shopJson, Shop.class);
-            return shop;
+            return JSONUtil.toBean(shopJson, Shop.class);
         }
         // 判断命中的是否是空值
         if (shopJson != null){
@@ -293,5 +293,33 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
         }
         // 6.返回
         return Result.ok(shops);
+    }
+
+    @Override
+    public Result queryShopsWithSort(Integer typeId, String sortBy, Integer current) {
+        // 1.构建查询条件
+        LambdaQueryWrapper<Shop> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Shop::getTypeId, typeId);
+        
+        // 2.根据sortBy参数设置排序规则
+        if ("score".equals(sortBy)) {
+            // 按评分降序（评分存储时乘以了10，需要除以10）
+            wrapper.orderByDesc(Shop::getScore);
+        } else if ("sold".equals(sortBy)) {
+            // 按销量降序
+            wrapper.orderByDesc(Shop::getSold);
+        } else if ("price".equals(sortBy)) {
+            // 按均价升序（从便宜到贵）
+            wrapper.orderByAsc(Shop::getAvgPrice);
+        } else {
+            // 默认按销量降序
+            wrapper.orderByDesc(Shop::getSold);
+        }
+        
+        // 3.分页查询
+        Page<Shop> page = new Page<>(current, SystemConstants.DEFAULT_PAGE_SIZE);
+        Page<Shop> result = page(page, wrapper);
+        
+        return Result.ok(result.getRecords());
     }
 }
