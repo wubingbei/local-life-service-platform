@@ -3,6 +3,13 @@ server:
 spring:
   application:
     name: llsp
+  ai:
+    openai:
+      api-key: your-ai-api-key
+      base-url: your-ai-base-url
+      chat:
+        options:
+          model: your-ai-model-name
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/llsp?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
@@ -25,7 +32,7 @@ spring:
   jackson:
     default-property-inclusion: non_null
   rabbitmq:
-    host: localhost
+    host: your-rabbitmq-host
     port: 5672
     virtual-host: /your-vhost
     username: your-rabbitmq-username
