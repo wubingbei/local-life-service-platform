@@ -18,8 +18,12 @@ public class InMemoryChatHistoryRepository implements ChatHistoryRepository{
     @Override
     public void save(Long userId, String chatId) {
         String key = RedisConstants.CHAT_HISTORY_KEY + userId;
-        // 将chatId添加到用户的会话列表中
-        stringRedisTemplate.opsForList().rightPush(key, chatId);
+        // 检查chatId是否已存在
+        List<String> existingChats = stringRedisTemplate.opsForList().range(key, 0, -1);
+        if (existingChats == null || !existingChats.contains(chatId)) {
+            // 只有不存在时才添加
+            stringRedisTemplate.opsForList().rightPush(key, chatId);
+        }
         // 设置过期时间（7天）
         stringRedisTemplate.expire(key, RedisConstants.CHAT_HISTORY_TTL, TimeUnit.DAYS);
     }

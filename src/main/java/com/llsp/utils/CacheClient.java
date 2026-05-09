@@ -41,12 +41,12 @@ public class CacheClient {
     }
 
     // <R, ID>声明泛型，告诉编译器有哪些占位符，R是返回类型
-    public <R, ID> R queryWithPassThrough(
+    public <R, ID> R queryWithMutex(
             String keyPrefix, ID id, Class<R> type, Function<ID, R> dbFallback, Long time, TimeUnit unit) {
 
         String key = keyPrefix + id;
         log.info("缓存key为：{}", key);
-        // 1.从redis查询商铺缓存
+        // 1.从redis查询缓存
         String json = stringRedisTemplate.opsForValue().get(key);
         // 2.判断是否存在
         if (StrUtil.isNotBlank(json)){
@@ -58,17 +58,43 @@ public class CacheClient {
         if (json != null){
             return null;
         }
-        // 4.不存在，根据id查询数据库
-        R r = dbFallback.apply(id);
-        // 5.不存在，返回错误
-        if (r == null) {
-            // 将空值写入redis
-            stringRedisTemplate.opsForValue().set(key, "", CACHE_NULL_TTL, TimeUnit.MINUTES);
-            return null;
+        // 4.不存在，尝试获取互斥锁
+        String lockKey = LOCK_SHOP_KEY + id;
+        R r = null;
+        try {
+            boolean isLock = trylock(lockKey);
+            // 5.判断是否获取成功
+            if (!isLock) {
+                // 5.1 获取失败，休眠并重试
+                Thread.sleep(50);
+                return queryWithMutex(keyPrefix, id, type, dbFallback, time, unit);
+            }
+            // 5.2 获取成功，二次检查缓存
+            json = stringRedisTemplate.opsForValue().get(key);
+            if (StrUtil.isNotBlank(json)) {
+                return JSONUtil.toBean(json, type);
+            }
+            if (json != null) {
+                return null;
+            }
+            // 6.根据id查询数据库
+            log.info("缓存未命中，查询数据库");
+            r = dbFallback.apply(id);
+            // 7.判断数据库是否存在
+            if (r == null) {
+                // 将空值写入redis
+                stringRedisTemplate.opsForValue().set(key, "", CACHE_NULL_TTL, TimeUnit.MINUTES);
+                return null;
+            }
+            // 8.写入redis
+            this.set(key, r, time, unit);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        } finally {
+            // 9.释放互斥锁
+            unLock(lockKey);
         }
-        // 6.存在，写入redis
-        this.set(key, r, time, unit);
-        // 7.返回
+        // 10.返回
         return r;
     }
 
@@ -95,7 +121,7 @@ public class CacheClient {
         }
         // 5.2已过期，需要缓存重建
         // 5.2.1获得互斥锁
-        String lockKey = RedisConstants.LOCK_SHOP_KEY + id;
+        String lockKey = "lock" + key;
         boolean isLock = trylock(lockKey);
         // 5.2.2判断是否获取成功
         if (isLock) {

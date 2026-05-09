@@ -52,7 +52,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
             return Result.ok(shop);
         }
         // 二级缓存：Redis分布式缓存
-        shop = cacheClient.queryWithPassThrough(CACHE_SHOP_KEY, id, Shop.class, this::getById, CACHE_SHOP_TTL, TimeUnit.MINUTES);
+        shop = cacheClient.queryWithMutex(CACHE_SHOP_KEY, id, Shop.class, this::getById, CACHE_SHOP_TTL, TimeUnit.MINUTES);
         if (shop == null) {
             return Result.fail("店铺不存在");
         }
@@ -61,15 +61,24 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
         return Result.ok(shop);
     }
 
+    /**
+     * 从本地缓存中获取数据
+     */
     private Shop getFromLocalCache(Long id) {
         Object obj = shopCache.getIfPresent(id);
         return obj instanceof Shop ? (Shop) obj : null;
     }
 
+    /**
+     * 写入本地缓存
+     */
     private void putToLocalCache(Long id, Shop shop) {
         shopCache.put(id, shop);
     }
 
+    /***
+     * 删除本地缓存
+     */
     private void removeFromLocalCache(Long id) {
         shopCache.invalidate(id);
     }

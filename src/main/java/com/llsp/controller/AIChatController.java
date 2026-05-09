@@ -4,16 +4,22 @@ import com.llsp.dto.Result;
 import com.llsp.repository.ChatHistoryRepository;
 import com.llsp.utils.SystemConstants;
 import com.llsp.utils.UserHolder;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.annotation.Resource;
+import reactor.core.publisher.Flux;
+
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Slf4j
 @RestController
 @RequestMapping("/ai")
 public class AIChatController {
@@ -41,25 +47,33 @@ public class AIChatController {
     /**
      * 发送消息（需要指定会话ID）
      */
-    @PostMapping("/chat/{chatId}/send")
-    public Result sendMessage(@PathVariable String chatId, 
-                              @RequestParam String message) {
+    @PostMapping(value = "/chat/{chatId}/send", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<String> chat(@PathVariable String chatId, 
+                             @RequestParam String prompt) {
         Long userId = UserHolder.getUser().getId();
-        // 验证会话ID是否属于当前用户
+        // 1. 先验证会话归属
         List<String> chatIds = chatHistoryRepository.getChatIds(userId);
         if (!chatIds.contains(chatId)) {
-            return Result.fail("会话不存在");
+            log.warn("用户 {} 尝试访问不属于自己的会话 {}", userId, chatId);
+            return Flux.just("会话不存在或无权限");
         }
-        
-        // 调用AI服务，注意：参数名必须使用 ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY
-        String response = serviceChatClient.prompt()
-                .system(SystemConstants.SERVICE_SYSTEM_PROMPT)
-                .user(message)
-                .advisors(advisor -> advisor.param(ChatMemory.CONVERSATION_ID, chatId))
-                .call()
-                .content();
-        
-        return Result.ok(response);
+        // 2. 更新会话活跃时间
+        chatHistoryRepository.save(userId, chatId);
+
+        return serviceChatClient.prompt()
+                .user(prompt)
+                .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, chatId))
+                .stream()
+                .content()
+                .timeout(Duration.ofSeconds(5), Flux.defer(() -> {
+                    log.warn("AI 首字响应超时 (5s)，会话ID: {}", chatId);
+                    return Flux.just("AI 响应超时，请稍后重试");
+                }))
+                .onErrorResume(e -> {
+                    log.error("AI 对话异常，会话ID: {}, 错误: {}", chatId, e.getMessage());
+                    return Flux.just("AI 服务异常");
+                })
+                .defaultIfEmpty("未收到AI响应");
     }
 
     /**
@@ -83,10 +97,8 @@ public class AIChatController {
         if (!chatIds.contains(chatId)) {
             return Result.fail("会话不存在");
         }
-        
         // 从ChatMemory中获取消息列表
         List<Message> messages = chatMemory.get(chatId);
-        
         // 转换为前端友好的格式
         List<Map<String, String>> messageList = messages.stream()
                 .map(msg -> {
