@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
+    <title>本地生活 · 消息</title>
+    <link rel="stylesheet" href="./css/element.css?v=20260603">
+    <link rel="stylesheet" href="./css/main.css?v=20260603">
+    <style>
+        #app {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .header {
+            background: #E85D5D;
+            color: white;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            flex-shrink: 0;
+            font-size: 17px;
+            font-weight: 600;
+        }
+        .header-back { font-size: 20px; cursor: pointer; margin-right: 10px; }
+        .header-title { flex: 1; }
+        .tabs {
+            display: flex;
+            flex-shrink: 0;
+            background: #fff;
+            border-bottom: 1px solid #eee;
+        }
+        .tab-item {
+            flex: 1;
+            text-align: center;
+            padding: 13px 0;
+            font-size: 15px;
+            color: #666;
+            cursor: pointer;
+            position: relative;
+        }
+        .tab-item.active {
+            color: #E85D5D;
+            font-weight: 600;
+        }
+        .tab-item.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 28px;
+            height: 3px;
+            background: #E85D5D;
+            border-radius: 2px;
+        }
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            background: #fff;
+        }
+        /* 互动消息项 */
+        .msg-item {
+            display: flex;
+            align-items: center;
+            padding: 14px 16px;
+            border-bottom: 1px solid #f5f5f5;
+            cursor: pointer;
+        }
+        .msg-item:active {
+            background: #fafafa;
+        }
+        .msg-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            margin-right: 12px;
+            overflow: hidden;
+            background: #f0f0f0;
+        }
+        .msg-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .msg-body {
+            flex: 1;
+            min-width: 0;
+        }
+        .msg-top {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .msg-name {
+            font-size: 15px;
+            font-weight: 600;
+            color: #333;
+        }
+        .msg-time {
+            font-size: 12px;
+            color: #bbb;
+            flex-shrink: 0;
+        }
+        .msg-text {
+            font-size: 13px;
+            color: #999;
+            margin-top: 4px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .msg-follow-btn {
+            flex-shrink: 0;
+            margin-left: 10px;
+            padding: 6px 16px;
+            border-radius: 16px;
+            font-size: 13px;
+            cursor: pointer;
+            border: 1px solid #E85D5D;
+            color: #E85D5D;
+            background: #fff;
+        }
+        .msg-follow-btn.followed {
+            background: #f5f5f5;
+            color: #999;
+            border-color: #ddd;
+        }
+        /* 空状态 */
+        .empty {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #bbb;
+            gap: 12px;
+        }
+        .empty-icon { font-size: 56px; }
+        .empty-text { font-size: 14px; }
+        .empty-sub { font-size: 12px; color: #ccc; }
+        /* 加载状态 */
+        .loading-box {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 0;
+            color: #bbb;
+        }
+        .dot-ani { display: flex; gap: 4px; }
+        .dot-ani span {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: #bbb;
+            animation: dotBounce 1.4s infinite ease-in-out;
+        }
+        .dot-ani span:nth-child(2) { animation-delay: 0.2s; }
+        .dot-ani span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes dotBounce {
+            0%,80%,100%{transform:scale(0.5);opacity:0.4}
+            40%{transform:scale(1);opacity:1}
+        }
+    </style>
+</head>
+<body>
+<div id="app">
+    <div class="header">
+        <div class="header-title" style="text-align:center;width:100%;">消息</div>
+    </div>
+    <div class="tabs">
+        <div class="tab-item" :class="{active: tab === 0}" @click="switchTab(0)">互动消息</div>
+        <div class="tab-item" :class="{active: tab === 1}" @click="switchTab(1)">系统通知</div>
+    </div>
+    <div class="content">
+        <!-- 互动消息 -->
+        <div v-show="tab === 0">
+            <div class="loading-box" v-if="loading">
+                <div class="dot-ani"><span></span><span></span><span></span></div>
+            </div>
+            <div class="empty" v-else-if="msgList.length === 0">
+                <div class="empty-icon">💬</div>
+                <div class="empty-text">暂无互动消息</div>
+                <div class="empty-sub">去发布精彩笔记，吸引更多关注吧</div>
+            </div>
+            <div v-else>
+                <div v-for="m in msgList" :key="m.key" class="msg-item" @click="onMsgClick(m)">
+                    <div class="msg-avatar">
+                        <img :src="m.userIcon || '/imgs/icons/default-icon.png'" alt="">
+                    </div>
+                    <div class="msg-body">
+                        <div class="msg-top">
+                            <span class="msg-name">{{m.userName}}</span>
+                            <span class="msg-time">{{m.timeText}}</span>
+                        </div>
+                        <div class="msg-text">{{m.text}}</div>
+                    </div>
+                    <button v-if="m.showFollow" class="msg-follow-btn" :class="{followed: m.isFollowed}" @click.stop="toggleFollow(m)">
+                        {{m.isFollowed ? '已关注' : '关注'}}
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!-- 系统通知 -->
+        <div v-show="tab === 1">
+            <div class="empty">
+                <div class="empty-icon">🔔</div>
+                <div class="empty-text">暂无系统通知</div>
+                <div class="empty-sub">系统消息会在这里显示</div>
+            </div>
+        </div>
+    </div>
+    <foot-bar :active-btn="3"></foot-bar>
+</div>
+<script src="./js/vue.js"></script>
+<script src="./js/axios.min.js"></script>
+<script src="./js/element.js"></script>
+<script src="./js/common.js"></script>
+<script src="./js/footer.js"></script>
+<script>
+const app = new Vue({
+    el: "#app",
+    data: {
+        tab: 0,
+        msgList: [],
+        loading: true
+    },
+    created() {
+        this.loadMessages();
+    },
+    methods: {
+        goBack() { history.back(); },
+        switchTab(t) { this.tab = t; },
+        loadMessages() {
+            var self = this;
+            self.loading = true;
+            // 同时加载关注我的用户 + 评论我的内容
+            Promise.all([
+                axios.get("/follow/my/followers").then(({data}) => data || []).catch(() => []),
+                axios.get("/blog-comments/to-me").then(({data}) => data || []).catch(() => [])
+            ]).then(function(results) {
+                var followers = results[0];
+                var comments = results[1];
+                var list = [];
+                // 关注我的用户
+                followers.forEach(function(u) {
+                    list.push({
+                        key: 'f-' + u.id,
+                        type: 'follow',
+                        userId: u.id,
+                        userName: u.nickName,
+                        userIcon: u.icon,
+                        text: '关注了你',
+                        time: null,
+                        timeText: '',
+                        showFollow: true,
+                        isFollowed: false
+                    });
+                });
+                // 评论我的内容
+                comments.forEach(function(c) {
+                    var blogTitle = c.blogTitle || '你的笔记';
+                    list.push({
+                        key: 'c-' + c.id,
+                        type: 'comment',
+                        userId: c.userId,
+                        userName: c.userName,
+                        userIcon: c.userIcon,
+                        text: '评论了你的笔记《' + blogTitle + '》',
+                        time: c.createTime,
+                        timeText: self.formatTime(c.createTime),
+                        showFollow: false,
+                        isFollowed: false,
+                        blogId: c.blogId
+                    });
+                });
+                // 按时间排序（评论有时间，关注无时间排前面）
+                list.sort(function(a, b) {
+                    if (!a.time && !b.time) return 0;
+                    if (!a.time) return 1;
+                    if (!b.time) return -1;
+                    return b.time.localeCompare(a.time);
+                });
+                self.msgList = list;
+                // 批量查询关注者的关注状态
+                self.checkFollowStatus();
+            }).finally(function() {
+                self.loading = false;
+            });
+        },
+        // 检查关注状态
+        checkFollowStatus() {
+            var self = this;
+            var followItems = this.msgList.filter(function(m) { return m.showFollow && m.userId; });
+            if (followItems.length === 0) return;
+            var promises = followItems.map(function(m) {
+                return axios.get("/follow/or/not/" + m.userId)
+                    .then(function(res) {
+                        m.isFollowed = res.data === true;
+                    })
+                    .catch(function() {});
+            });
+            Promise.all(promises);
+        },
+        toggleFollow(m) {
+            var self = this;
+            var newState = !m.isFollowed;
+            axios.put("/follow/" + m.userId + "/" + newState)
+                .then(function() {
+                    m.isFollowed = newState;
+                })
+                .catch(function() {});
+        },
+        onMsgClick(m) {
+            if (m.type === 'comment' && m.blogId) {
+                location.href = '/blog-detail.html?id=' + m.blogId;
+            } else if (m.type === 'follow' && m.userId) {
+                location.href = '/other-info.html?id=' + m.userId;
+            }
+        },
+        formatTime(timeStr) {
+            if (!timeStr) return '';
+            try {
+                var date = new Date(timeStr.replace(/-/g, '/'));
+                var now = new Date();
+                var diff = now - date;
+                if (diff < 60000) return '刚刚';
+                if (diff < 3600000) return Math.floor(diff / 60000) + '分钟前';
+                if (diff < 86400000) return Math.floor(diff / 3600000) + '小时前';
+                if (diff < 604800000) return Math.floor(diff / 86400000) + '天前';
+                return timeStr.substring(0, 10);
+            } catch(e) {
+                return timeStr;
+            }
+        }
+    }
+});
+</script>
+</body>
+</html>

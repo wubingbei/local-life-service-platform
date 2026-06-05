@@ -2,6 +2,7 @@ package com.llsp.config;
 
 import com.llsp.utils.LoginInterceptor;
 import com.llsp.utils.RefreshTokenInterceptor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
@@ -16,6 +17,9 @@ public class MvcConfig implements WebMvcConfigurer {
     @Resource
     private StringRedisTemplate stringRedisTemplate;
 
+    @Value("${llsp.cors.allowed-origins:*}")
+    private String allowedOrigins;
+
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(new RefreshTokenInterceptor(stringRedisTemplate))
@@ -27,11 +31,12 @@ public class MvcConfig implements WebMvcConfigurer {
                         "/user/login",
                         "/user/code",
                         "/blog/hot",
+                        "/blog-comments/of/**",
+                        "/shop-comments/of/**",
                         "/shop/**",
                         "/shop-type/**",
                         "/upload/**",
                         "/voucher/**",
-                        "/ai/**",
                         "/static/**",
                         "/ai-chat.html"
                 )
@@ -41,10 +46,10 @@ public class MvcConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
-                .allowedOriginPatterns("*")
+                .allowedOriginPatterns(allowedOrigins)
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
-                .allowCredentials(true)
+                .allowCredentials(!"*".equals(allowedOrigins))
                 .maxAge(3600);
     }
 }

@@ -1,0 +1,614 @@
+/* 个人页 flex 布局（适配固定底栏） */
+#app {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.header{
+    width: 100%;
+    line-height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 2px solid #FF2442;
+    flex-shrink: 0;
+}
+.header-back-btn{
+    width: 10%;
+    color: #FF2442;
+    font-size: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.header-title {
+    width: 80%;
+    text-align: center;
+    font-size: 18px;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+.header-placeholder {
+    width: 10%;
+}
+.basic{
+    display: flex;
+    align-items: flex-start;
+    padding: 15px 15px 5px 15px;
+    flex-shrink: 0;
+    gap: 10px;
+}
+.basic-icon {
+    width: 68px;
+    height: 68px;
+    flex-shrink: 0;
+    padding: 1px;
+    background-color: #fff;
+    border-radius: 50%;
+    box-shadow: 0 0 3px 2px rgba(0, 0, 0, 0.07);
+}
+.basic-icon img {
+    border-radius: 50%;
+    width: 100%;
+    height: 100%;
+}
+
+.basic-info {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+}
+.basic-info .name{
+    font-weight: bold;
+    font-size: 14px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.basic-info span{
+    display: inline-block;
+    padding: 0 10px;
+    background-color: #eeeded;
+    margin: 5px 0 10px;
+    border-radius: 2px;
+ }
+
+.edit-btn{
+    max-width: 160px;
+    line-height: 25px;
+    border-radius: 12px;
+    text-align: center;
+    border: #eeeded 1px solid;
+    box-shadow: 0 1px 2px 1px rgba(0, 0, 0, 0.04);
+}
+.logout-btn{
+    flex-shrink: 0;
+    margin-top: 8px;
+    height: 24px;
+    line-height: 24px;
+    text-align: center;
+    font-size: 12px;
+    white-space: nowrap;
+    color: white;
+    padding: 0 10px;
+    border-radius: 3px;
+    background-color: #FF2442;
+    box-shadow: 0 1px 2px 1px rgba(0, 0, 0, 0.04);
+}
+
+.introduce{
+    padding: 0 15px;
+    flex-shrink: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.content {
+    padding: 10px 15px;
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+}
+
+/* ===== 自定义 Tab ===== */
+.custom-tabs {
+    display: flex;
+    border-bottom: 2px solid #f0f0f0;
+    margin-bottom: 12px;
+    flex-shrink: 0;
+}
+.custom-tab {
+    flex: 1;
+    min-width: 0;
+    text-align: center;
+    padding: 12px 4px;
+    font-size: 13px;
+    font-weight: bold;
+    color: #666;
+    cursor: pointer;
+    position: relative;
+    transition: color 0.2s;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.custom-tab.active {
+    color: #FF2442;
+}
+.custom-tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 20%;
+    width: 60%;
+    height: 3px;
+    background: #FF2442;
+    border-radius: 2px;
+}
+.tab-content {
+    /* content area for each tab */
+}
+
+.edit-container{
+    background-color: #f4f4f4;
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+}
+.divider {
+    height: 1px;
+    background-color: #e4e4e4;
+}
+.info-box {
+    margin-bottom: 10px;
+    padding: 5px 15px;
+    background-color: #fff;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+.info-item{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    line-height: 40px;
+    cursor: pointer;
+    min-width: 0;
+}
+.info-item:hover { background: #fafafa; }
+.info-label {
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+.info-btn{
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    flex-shrink: 1;
+    overflow: hidden;
+}
+.info-btn div {
+    margin-left: 5px;
+    flex-shrink: 1;
+    min-width: 0;
+}
+.info-btn div:first-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.blog-item {
+    display: flex;
+    padding: 10px;
+    height: 90px;
+    width: 100%;
+    box-sizing: border-box;
+    box-shadow: 1px 1px 4px 1px rgba(0,0,0,0.1);
+    margin-bottom: 10px;
+    cursor: pointer;
+}
+.blog-img {
+    width: 70px;
+    height: 90px;
+    margin-right: 10px;
+    flex-shrink: 0;
+}
+.blog-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.blog-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-width: 0;
+    overflow: hidden;
+}
+.blog-title {
+    line-height: 20px;
+    font-size: 13px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    word-break: break-all;
+}
+.blog-meta {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    min-width: 0;
+    overflow: hidden;
+}
+.blog-delete {
+    flex-shrink: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ccc;
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 50%;
+    transition: all 0.2s;
+    align-self: center;
+    margin-left: 4px;
+}
+.blog-delete:hover { color: #FF2442; background: #fff5f5; }
+.blog-liked {
+    font-size: 12px;
+    color: #999;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    transition: color 0.2s;
+    padding: 6px 8px;
+    margin: -6px -8px;
+}
+.blog-liked:hover { color: #FF2442; }
+.blog-liked svg { pointer-events: none; }
+.blog-liked img {
+    width: 16px;
+    height: 16px;
+    vertical-align: middle;
+}
+.blog-comments {
+    font-size: 12px;
+    color: #999;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    transition: color 0.2s;
+    padding: 6px 8px;
+    margin: -6px -8px;
+}
+.blog-comments:hover { color: #FF2442; }
+.blog-comments i {
+    font-size: 16px;
+    vertical-align: middle;
+    pointer-events: none;
+}
+
+/* ===== 空状态 ===== */
+.empty-tab {
+    text-align: center;
+    padding: 50px 20px;
+    width: 100%;
+    flex-basis: 100%;
+}
+.empty-icon {
+    font-size: 56px;
+    margin-bottom: 16px;
+}
+.empty-title {
+    font-size: 16px;
+    color: #666;
+    font-weight: 500;
+    margin-bottom: 8px;
+}
+.empty-desc {
+    font-size: 13px;
+    color: #bbb;
+    margin-bottom: 20px;
+}
+.empty-btn {
+    display: inline-block;
+    padding: 10px 32px;
+    background: #FF2442;
+    color: #fff;
+    border-radius: 20px;
+    font-size: 14px;
+    cursor: pointer;
+}
+.empty-btn:hover { opacity: 0.85; }
+
+/* ===== 评价列表 ===== */
+.comment-item {
+    padding: 10px 12px;
+    margin-bottom: 6px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    overflow: hidden;
+}
+.comment-content {
+    font-size: 13px;
+    color: #333;
+    line-height: 1.5;
+    margin-bottom: 6px;
+    word-break: break-all;
+    overflow: hidden;
+}
+.comment-blog {
+    font-size: 11px;
+    color: #FF2442;
+    margin-bottom: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.comment-time {
+    font-size: 10px;
+    color: #bbb;
+}
+.comment-foot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    min-width: 0;
+    overflow: hidden;
+}
+.comment-delete {
+    font-size: 10px;
+    color: #ccc;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: color 0.2s;
+}
+.comment-delete:hover { color: #FF2442; }
+
+/* ===== 粉丝 / 关注 用户列表 ===== */
+.user-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid #f5f5f5;
+    min-width: 0;
+    overflow: hidden;
+}
+.user-item:last-child { border-bottom: none; }
+.user-item-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    overflow: hidden;
+    margin-right: 10px;
+    flex-shrink: 0;
+    cursor: pointer;
+    border: 1px solid #f0f0f0;
+}
+.user-item-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.user-item-name {
+    flex: 1;
+    min-width: 0;
+    font-size: 13px;
+    color: #333;
+    cursor: pointer;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.user-item-btn {
+    padding: 5px 14px;
+    border-radius: 12px;
+    font-size: 11px;
+    cursor: pointer;
+    flex-shrink: 0;
+    margin-left: 8px;
+    transition: all 0.2s;
+}
+.unfollow-btn {
+    border: 1px solid #ddd;
+    color: #666;
+    background: #fff;
+}
+.unfollow-btn:hover { border-color: #FF2442; color: #FF2442; }
+.unfollow-btn:active { background: #f5f5f5; }
+.follow-btn {
+    background: #FF2442;
+    color: #fff;
+    border: none;
+}
+.follow-btn:hover { opacity: 0.85; }
+.follow-btn:active { opacity: 0.7; }
+
+/* 桌面端 */
+@media (min-width: 960px) {
+    body { background-color: #f0f0f0; }
+    #app {
+        max-width: 960px;
+        min-height: 100vh;
+        margin: 0 auto;
+        background: #fff;
+        box-shadow: 0 0 20px rgba(0,0,0,0.08);
+    }
+    .header {
+        line-height: 52px;
+        padding: 0 32px;
+    }
+    .header-back-btn { font-size: 26px; cursor: pointer; }
+    .header-back-btn:hover { opacity: 0.7; }
+    .header-title { font-size: 20px; }
+
+    /* 个人信息卡片 */
+    .basic {
+        padding: 32px 32px 16px;
+        align-items: center;
+    }
+    .basic-icon {
+        width: 100px;
+        height: 100px;
+        flex-shrink: 0;
+    }
+    .basic-info {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+    }
+    .basic-info .name { font-size: 22px; margin-bottom: 6px; }
+    .basic-info span {
+        font-size: 13px;
+        padding: 4px 18px;
+        margin: 6px 0 14px;
+    }
+    .edit-btn {
+        max-width: 180px;
+        font-size: 14px;
+        line-height: 38px;
+        border-radius: 19px;
+        padding: 0 24px;
+        cursor: pointer;
+        transition: border-color 0.2s, color 0.2s;
+    }
+    .edit-btn:hover { border-color: #FF2442; color: #FF2442; }
+    .logout-btn {
+        flex-shrink: 0;
+        padding: 0 24px;
+        font-size: 14px;
+        height: 38px;
+        line-height: 38px;
+        border-radius: 19px;
+        cursor: pointer;
+    }
+    .logout-btn:hover { opacity: 0.85; }
+
+    .introduce {
+        font-size: 14px;
+        padding: 0 32px 8px;
+        color: #666;
+    }
+
+    /* 笔记标签页 */
+    .content {
+        padding: 12px 32px;
+    }
+    /* 自定义 Tab — 桌面端 */
+    .custom-tab { font-size: 16px; padding: 14px 20px; overflow: visible; }
+    /* 笔记列表 — 两列（仅笔记卡片），粉丝/关注不受影响 */
+    .tab-content {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+    .tab-content > .blog-item {
+        width: calc(50% - 8px);
+        flex-shrink: 0;
+    }
+    .tab-content > .user-item,
+    .tab-content > .comment-item {
+        width: 100%;
+        flex-shrink: 0;
+    }
+    .blog-item {
+        width: 100%;
+        height: auto;
+        min-height: 100px;
+        border-radius: 12px;
+        padding: 16px;
+        box-sizing: border-box;
+        cursor: pointer;
+        transition: box-shadow 0.2s;
+        margin-bottom: 0;
+    }
+    .blog-item:hover { box-shadow: 1px 2px 12px 2px rgba(0,0,0,0.12); }
+    .blog-img {
+        width: 100px;
+        height: 100px;
+        border-radius: 8px;
+        overflow: hidden;
+        flex-shrink: 0;
+    }
+    .blog-img img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    .blog-info {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding-left: 4px;
+    }
+    .blog-title {
+        font-size: 15px;
+        line-height: 22px;
+        font-weight: 500;
+    }
+    .blog-meta { gap: 16px; }
+    .blog-liked, .blog-comments { font-size: 13px; display: flex; align-items: center; gap: 3px; padding: 4px 8px; margin: -4px -8px; }
+    .blog-liked img { width: 18px; height: 18px; }
+    .blog-liked svg { width: 16px; height: 16px; }
+    .blog-comments i { font-size: 18px; }
+    .blog-liked:hover, .blog-comments:hover { color: #FF2442; }
+    .blog-delete { width: 34px; height: 34px; font-size: 18px; }
+
+    /* 空状态 */
+    .empty-tab { padding: 80px 20px; }
+    .empty-icon { font-size: 64px; margin-bottom: 20px; }
+    .empty-title { font-size: 18px; }
+    .empty-desc { font-size: 14px; }
+    .empty-btn {
+        padding: 12px 40px;
+        font-size: 15px;
+        border-radius: 22px;
+        transition: opacity 0.2s;
+    }
+
+    /* 评价 */
+    .comment-item {
+        padding: 18px 20px;
+        margin-bottom: 10px;
+        border-radius: 10px;
+    }
+    .comment-content { font-size: 15px; }
+    .comment-blog { font-size: 13px; }
+    .comment-foot { margin-top: 8px; }
+    .comment-time { font-size: 12px; }
+    .comment-delete { font-size: 12px; }
+
+    /* 粉丝 / 关注 */
+    .user-item { padding: 14px 0; }
+    .user-item-avatar { width: 52px; height: 52px; margin-right: 16px; }
+    .user-item-name { font-size: 15px; }
+    .user-item-btn {
+        padding: 8px 20px;
+        font-size: 13px;
+        border-radius: 16px;
+    }
+    .unfollow-btn:hover { border-color: #FF2442; color: #FF2442; }
+
+    /* 资料编辑页 */
+    .edit-container {
+        padding: 0 32px;
+    }
+    .info-box {
+        margin: 0 0 16px;
+        padding: 8px 24px;
+        border-radius: 12px;
+    }
+    .info-item {
+        line-height: 54px;
+        font-size: 15px;
+    }
+    .info-btn { font-size: 14px; }
+    .divider { height: 1px; }
+}

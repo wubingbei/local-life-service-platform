@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
+  <title>本地生活</title>
+  <link rel="stylesheet" href="./css/element.css?v=20260603">
+  <link href="./css/index.css?v=20260603" rel="stylesheet">
+  <link href="./css/main.css?v=20260603" rel="stylesheet">
+  <style type="text/css">
+      #app { height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+      .el-input__inner { border-radius: 20px; }
+  </style>
+</head>
+<body>
+<div id="app">
+  <!-- 顶部导航 -->
+  <div class="top-nav">
+    <div class="nav-tabs">
+      <div class="nav-tab" :class="{active: activeTab === 0}" @click="switchTab(0)">关注</div>
+      <div class="nav-tab" :class="{active: activeTab === 1}" @click="switchTab(1)">发现</div>
+    </div>
+    <div class="nav-actions">
+      <div class="nav-icon" @click="toAI" title="AI助手"><svg style="width:20px;height:20px;vertical-align:middle" viewBox="0 0 24 24" fill="#333"><path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2zM10 11a1 1 0 0 0-1 1v1a1 1 0 0 0 2 0v-1a1 1 0 0 0-1-1zm4 0a1 1 0 0 0-1 1v1a1 1 0 0 0 2 0v-1a1 1 0 0 0-1-1z"/></svg></div>
+    </div>
+  </div>
+  <!-- 搜索栏 -->
+  <div class="search-bar">
+    <div class="search-input">
+      <el-input size="mini" placeholder="搜索笔记、商户" v-model="keyword" @keyup.enter.native="search" clearable>
+        <i slot="prefix" class="el-input__icon el-icon-search"></i>
+      </el-input>
+    </div>
+  </div>
+
+  <!-- ===== 关注 Tab ===== -->
+  <div class="scroll-area" @scroll="onFollowScroll" v-show="activeTab === 0">
+    <!-- 关注的人横向列表 -->
+    <div class="following-bar" v-if="followings.length > 0">
+      <div class="following-list">
+        <div class="following-item" v-for="f in followings" :key="f.id" @click="toUserInfo(f.id)">
+          <div class="following-avatar"><img :src="f.icon || '/imgs/icons/default-icon.png'" alt=""></div>
+          <div class="following-name">{{f.nickName}}</div>
+        </div>
+      </div>
+    </div>
+    <!-- 还未加载关注列表 -->
+    <div class="follow-empty" v-if="followings.length === 0 && !followLoaded">
+      <div class="empty-icon">👥</div>
+      <div class="empty-text">关注你感兴趣的人</div>
+      <div class="empty-sub">去看看发现页的精彩内容</div>
+    </div>
+    <!-- 有关注的人，但他们还没发笔记 -->
+    <div class="follow-empty" v-if="followings.length > 0 && followLoaded && followBlogs.length === 0">
+      <div class="empty-icon">📝</div>
+      <div class="empty-text">你关注的人还没有发布笔记</div>
+      <div class="empty-sub">等待他们分享精彩内容</div>
+    </div>
+    <!-- 瀑布流 -->
+    <div class="waterfall" :class="'cols-' + columnCount">
+      <div class="waterfall-col" v-for="(col, ci) in followColumns" :key="'fc'+ci">
+        <div class="blog-box" v-for="b in col" :key="b.id">
+          <div class="blog-img" @click="toBlogDetail(b)"><img :src="b.img" alt=""></div>
+          <div class="blog-title">{{b.title}}</div>
+          <div class="blog-foot">
+            <div class="blog-user-icon"><img :src="b.icon || '/imgs/icons/default-icon.png'" alt=""></div>
+            <div class="blog-user-name">{{b.name}}</div>
+            <div class="blog-liked" @click.stop="addLike(b, 'follow')">
+              <svg viewBox="0 0 1024 1024" width="14" height="14">
+                <path d="M160 944c0 8.8-7.2 16-16 16h-32c-26.5 0-48-21.5-48-48V528c0-26.5 21.5-48 48-48h32c8.8 0 16 7.2 16 16v448zM96 416c-53 0-96 43-96 96v416c0 53 43 96 96 96h96c17.7 0 32-14.3 32-32V448c0-17.7-14.3-32-32-32H96zM505.6 64c16.2 0 26.4 8.7 31 13.9 4.6 5.2 12.1 16.3 10.3 32.4l-23.5 203.4c-4.9 42.2 8.6 84.6 36.8 116.4 28.3 31.7 68.9 49.9 111.4 49.9h271.2c6.6 0 10.8 3.3 13.2 6.1s5 7.5 4 14l-48 303.4c-6.9 43.6-29.1 83.4-62.7 112C815.8 944.2 773 960 728.9 960h-317c-33.1 0-59.9-26.8-59.9-59.9v-455c0-6.1 1.7-12 5-17.1 69.5-109 106.4-234.2 107-364h41.6z m0-64h-44.9C427.2 0 400 27.2 400 60.7c0 127.1-39.1 251.2-112 355.3v484.1c0 68.4 55.5 123.9 123.9 123.9h317c122.7 0 227.2-89.3 246.3-210.5l47.9-303.4c7.8-49.4-30.4-94.1-80.4-94.1H671.6c-50.9 0-90.5-44.4-84.6-95l23.5-203.4C617.7 55 568.7 0 505.6 0z" :fill="b.isLike ? '#FF2442' : '#ccc'"></path>
+              </svg>
+              {{b.liked}}
+            </div>
+            <div class="blog-comment-btn" @click.stop="openCommentDialog(b)">
+              <i class="el-icon-chat-dot-round" style="font-size:15px;"></i> {{b.comments || 0}}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 发现 Tab ===== -->
+  <div class="scroll-area" @scroll="onDiscoverScroll" v-show="activeTab === 1">
+    <div class="type-list">
+      <div class="type-box" v-for="t in types" :key="t.id" @click="toShopList(t.id, t.name)">
+        <div class="type-view"><img :src="'/imgs/' + t.icon" alt=""></div>
+        <div class="type-text">{{t.name}}</div>
+      </div>
+    </div>
+    <div class="waterfall" :class="'cols-' + columnCount">
+      <div class="waterfall-col" v-for="(col, ci) in discoverColumns" :key="'dc'+ci">
+        <div class="blog-box" v-for="b in col" :key="b.id">
+          <div class="blog-img" @click="toBlogDetail(b)"><img :src="b.img" alt=""></div>
+          <div class="blog-title">{{b.title}}</div>
+          <div class="blog-foot">
+            <div class="blog-user-icon"><img :src="b.icon || '/imgs/icons/default-icon.png'" alt=""></div>
+            <div class="blog-user-name">{{b.name}}</div>
+            <div class="blog-liked" @click.stop="addLike(b, 'discover')">
+              <svg viewBox="0 0 1024 1024" width="14" height="14">
+                <path d="M160 944c0 8.8-7.2 16-16 16h-32c-26.5 0-48-21.5-48-48V528c0-26.5 21.5-48 48-48h32c8.8 0 16 7.2 16 16v448zM96 416c-53 0-96 43-96 96v416c0 53 43 96 96 96h96c17.7 0 32-14.3 32-32V448c0-17.7-14.3-32-32-32H96zM505.6 64c16.2 0 26.4 8.7 31 13.9 4.6 5.2 12.1 16.3 10.3 32.4l-23.5 203.4c-4.9 42.2 8.6 84.6 36.8 116.4 28.3 31.7 68.9 49.9 111.4 49.9h271.2c6.6 0 10.8 3.3 13.2 6.1s5 7.5 4 14l-48 303.4c-6.9 43.6-29.1 83.4-62.7 112C815.8 944.2 773 960 728.9 960h-317c-33.1 0-59.9-26.8-59.9-59.9v-455c0-6.1 1.7-12 5-17.1 69.5-109 106.4-234.2 107-364h41.6z m0-64h-44.9C427.2 0 400 27.2 400 60.7c0 127.1-39.1 251.2-112 355.3v484.1c0 68.4 55.5 123.9 123.9 123.9h317c122.7 0 227.2-89.3 246.3-210.5l47.9-303.4c7.8-49.4-30.4-94.1-80.4-94.1H671.6c-50.9 0-90.5-44.4-84.6-95l23.5-203.4C617.7 55 568.7 0 505.6 0z" :fill="b.isLike ? '#FF2442' : '#ccc'"></path>
+              </svg>
+              {{b.liked}}
+            </div>
+            <div class="blog-comment-btn" @click.stop="openCommentDialog(b)">
+              <i class="el-icon-chat-dot-round" style="font-size:15px;"></i> {{b.comments || 0}}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <foot-bar :active-btn="1"></foot-bar>
+</div>
+<script src="./js/vue.js"></script>
+<script src="./js/axios.min.js"></script>
+<script src="./js/element.js"></script>
+<script src="./js/common.js"></script>
+<script src="./js/footer.js"></script>
+<script>
+  const app = new Vue({
+    el: "#app",
+    data: {
+      activeTab: 1,       // 默认"发现"
+      keyword: '',
+      types: [],          // 分类列表
+      user: null,         // 登录用户（评论时检查）
+      columnCount: 2,     // 瀑布流列数（响应式）
+      // 关注
+      followings: [],     // 关注的人
+      followBlogs: [],    // 关注人的笔记
+      followLastId: 0,
+      followOffset: 0,
+      followReachBottom: false,
+      followLoaded: false,
+      // 发现
+      hotBlogs: [],
+      discoverCurrent: 1,
+      discoverReachBottom: false,
+    },
+    created() {
+      this.setColumnCount();
+      window.addEventListener('resize', this.setColumnCount);
+      this.queryTypes();
+      this.queryHotBlogsScroll();
+    },
+    beforeDestroy() {
+      window.removeEventListener('resize', this.setColumnCount);
+    },
+    computed: {
+      followColumns() {
+        return this.distributeColumns(this.followBlogs);
+      },
+      discoverColumns() {
+        return this.distributeColumns(this.hotBlogs);
+      }
+    },
+    methods: {
+      setColumnCount() {
+        this.columnCount = window.innerWidth >= 960 ? 3 : 2;
+      },
+      distributeColumns(list) {
+        const cols = Array.from({length: this.columnCount}, () => []);
+        list.forEach((item, i) => {
+          cols[i % this.columnCount].push(item);
+        });
+        return cols;
+      },
+      switchTab(t) {
+        this.activeTab = t;
+        if (t === 0) {
+          this.loadFollowData();
+        }
+      },
+      // ========== 关注 ==========
+      loadFollowData() {
+        if (this.followings.length > 0) return; // 已加载
+        // 获取关注的人
+        axios.get("/follow/my/following")
+          .then(({data}) => {
+            this.followings = data || [];
+            if (this.followings.length > 0) {
+              this.queryFollowBlogs().finally(() => { this.followLoaded = true; });
+            } else {
+              this.followLoaded = true;
+            }
+          })
+          .catch(() => { this.followLoaded = true; });
+      },
+      queryFollowBlogs() {
+        return axios.get("/blog/of/follow", { params: { lastId: this.followLastId, offset: this.followOffset } })
+          .then(({data}) => {
+            if (data && data.list && data.list.length > 0) {
+              data.list.forEach(b => b.img = b.images.split(",")[0]);
+              this.followBlogs = this.followBlogs.concat(data.list);
+              this.followLastId = data.minTime;
+              this.followOffset = data.offset;
+            }
+          })
+          .catch(() => {});
+      },
+      onFollowScroll(e) {
+        var t = e.target;
+        if (t.scrollTop + t.offsetHeight > t.scrollHeight - 20 && !this.followReachBottom) {
+          this.followReachBottom = true;
+          if (this.followings.length > 0) {
+            this.queryFollowBlogs();
+          }
+          setTimeout(() => { this.followReachBottom = false; }, 500);
+        }
+      },
+      toUserInfo(uid) {
+        location.href = "/other-info.html?id=" + uid;
+      },
+      // ========== 发现 ==========
+      queryTypes() {
+        axios.get("/shop-type/list")
+          .then(({data}) => { this.types = data; })
+          .catch(() => {});
+      },
+      queryHotBlogsScroll() {
+        axios.get("/blog/hot?current=" + this.discoverCurrent)
+          .then(({data}) => {
+            data.forEach(b => b.img = b.images.split(",")[0]);
+            this.hotBlogs = this.hotBlogs.concat(data);
+          })
+          .catch(() => {});
+      },
+      onDiscoverScroll(e) {
+        var t = e.target;
+        if (t.scrollTop + t.offsetHeight > t.scrollHeight - 20 && !this.discoverReachBottom) {
+          this.discoverReachBottom = true;
+          this.discoverCurrent++;
+          this.queryHotBlogsScroll();
+          setTimeout(() => { this.discoverReachBottom = false; }, 500);
+        }
+      },
+      // ========== 通用 ==========
+      addLike(b, source) {
+        axios.put("/blog/like/" + b.id)
+          .then(() => {
+            axios.get("/blog/" + b.id).then(({data}) => {
+              b.liked = data.liked;
+              b.isLike = data.isLike;
+            });
+          })
+          .catch(() => {});
+      },
+      // ========== 评论 ==========
+      openCommentDialog(b) {
+        location.href = "/blog-detail.html?id=" + b.id + "#comments";
+      },
+      toShopList(id, name) {
+        location.href = "/shop-list.html?type=" + id + "&name=" + name;
+      },
+      toBlogDetail(b) {
+        location.href = "/blog-detail.html?id=" + b.id;
+      },
+      search() {
+        if (this.keyword.trim()) {
+          location.href = "/shop-list.html?name=" + encodeURIComponent(this.keyword.trim());
+        }
+      },
+      toAI() {
+        location.href = "/ai-chat.html";
+      }
+    }
+  })
+</script>
+</body>
+</html>

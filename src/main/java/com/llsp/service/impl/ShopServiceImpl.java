@@ -4,11 +4,15 @@ import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.llsp.dto.Result;
 import com.llsp.entity.Shop;
+import com.llsp.entity.ShopComments;
+import com.llsp.mapper.ShopCommentsMapper;
 import com.llsp.mapper.ShopMapper;
 import com.llsp.service.IShopService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -32,6 +36,7 @@ import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import static com.llsp.utils.RedisConstants.*;
 
@@ -43,12 +48,16 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
     private CacheClient cacheClient;
     @Resource
     private Cache<Long, Object> shopCache;
+    @Resource
+    private ShopCommentsMapper shopCommentsMapper;
 
     @Override
     public Result queryById(Long id) {
         // 一级缓存：Caffeine本地缓存
         Shop shop = getFromLocalCache(id);
         if (shop != null) {
+            // 填充真实评论数
+            populateRealCommentCounts(Collections.singletonList(shop));
             return Result.ok(shop);
         }
         // 二级缓存：Redis分布式缓存
@@ -56,6 +65,8 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
         if (shop == null) {
             return Result.fail("店铺不存在");
         }
+        // 填充真实评论数
+        populateRealCommentCounts(Collections.singletonList(shop));
         // 将数据写入一级缓存
         putToLocalCache(id, shop);
         return Result.ok(shop);
@@ -246,10 +257,10 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
         }
         // 1.更新数据库
         updateById(shop);
-        // 2.删除一级缓存（本地）
-        removeFromLocalCache(id);
-        // 3.删除二级缓存（Redis）
+        // 2.删除二级缓存（Redis）
         stringRedisTemplate.delete(CACHE_SHOP_KEY + id);
+        // 3.删除一级缓存（本地）
+        removeFromLocalCache(id);
         return Result.ok();
     }
 
@@ -261,6 +272,8 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
             Page<Shop> page = query()
                     .eq("type_id", typeId)
                     .page(new Page<>(current, SystemConstants.DEFAULT_PAGE_SIZE));
+            // 填充真实评论数
+            populateRealCommentCounts(page.getRecords());
             return Result.ok(page.getRecords());
         }
         // 2.计算分页参数
@@ -276,7 +289,12 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
         );
         // 4.解析出id
         if (results == null) {
-            return Result.ok(Collections.emptyList());
+            // Redis GEO 无数据，回退到数据库查询
+            Page<Shop> page = query()
+                    .eq("type_id", typeId)
+                    .page(new Page<>(current, SystemConstants.DEFAULT_PAGE_SIZE));
+            populateRealCommentCounts(page.getRecords());
+            return Result.ok(page.getRecords());
         }
         List<GeoResult<RedisGeoCommands.GeoLocation<String>>> list = results.getContent();
         if (list.size() <= from) {
@@ -295,13 +313,59 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
             distanceMap.put(shopIdStr, distance);
         });
         // 5.根据 id 查询 shop
-        String idStr = StrUtil.join(",", ids);
         List<Shop> shops = query().in("id", ids).list();
         for (Shop shop : shops) {
             shop.setDistance(distanceMap.get(shop.getId().toString()).getValue());
         }
+        // 填充真实评论数
+        populateRealCommentCounts(shops);
         // 6.返回
         return Result.ok(shops);
+    }
+
+    /**
+     * 根据名称关键字搜索商铺
+     */
+    @Override
+    public Result queryShopByName(String name, Integer current, Integer size) {
+        int pageSize = size != null ? size : SystemConstants.MAX_PAGE_SIZE;
+        Page<Shop> page = query()
+                .like(StrUtil.isNotBlank(name), "name", name)
+                .page(new Page<>(current, pageSize));
+        // 填充真实评论数
+        populateRealCommentCounts(page.getRecords());
+        return Result.ok(page.getRecords());
+    }
+
+    /**
+     * 填充真实评论数
+     */
+    private void populateRealCommentCounts(List<Shop> shops) {
+        if (shops == null || shops.isEmpty()) {
+            return;
+        }
+        // 收集所有店铺ID
+        List<Long> shopIds = shops.stream()
+                .map(Shop::getId)
+                .collect(Collectors.toList());
+        // 批量查询每个店铺的真实评论数
+        List<Map<String, Object>> countResults = shopCommentsMapper.selectMaps(
+                new QueryWrapper<ShopComments>()
+                        .select("shop_id", "count(1) as cnt")
+                        .in("shop_id", shopIds)
+                        .groupBy("shop_id")
+        );
+        // 构建 shopId -> 真实评论数 的映射
+        Map<Long, Integer> countMap = new HashMap<>();
+        for (Map<String, Object> row : countResults) {
+            Long shopId = ((Number) row.get("shop_id")).longValue();
+            Integer cnt = ((Number) row.get("cnt")).intValue();
+            countMap.put(shopId, cnt);
+        }
+        // 覆盖静态 comments 字段为真实评论数
+        for (Shop shop : shops) {
+            shop.setComments(countMap.getOrDefault(shop.getId(), 0));
+        }
     }
 
     @Override

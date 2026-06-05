@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
+  <title>本地生活</title>
+  <!-- 引入样式 -->
+  <link rel="stylesheet" href="./css/element.css?v=20260603">
+  <link href="./css/main.css?v=20260603" rel="stylesheet">
+  <link href="./css/info.css?v=20260603" rel="stylesheet">
+
+  <style type="text/css">
+
+  </style>
+
+</head>
+
+<body>
+<div id="app">
+  <div class="header">
+    <div class="header-back-btn" @click="goBack"><i class="el-icon-arrow-left"></i></div>
+    <div class="header-title"></div>
+    <div class="header-placeholder"></div>
+  </div>
+  <div class="basic">
+    <div class="basic-icon">
+      <img :src="user.icon || '/imgs/icons/default-icon.png'" alt="">
+    </div>
+    <div class="basic-info">
+      <div class="name">{{user.nickName}}</div>
+      <span>{{info.city || '未设置'}}</span>
+    </div>
+    <div class="logout-btn" @click="follow">
+      {{followed ? "取消关注" : "关注"}}
+    </div>
+  </div>
+  <div class="introduce">
+    <span v-if="info.introduce">{{info.introduce}}</span>
+    <span v-else>这个人很懒，什么都没有留下</span>
+  </div>
+  <div class="content">
+    <!-- 自定义 Tab -->
+    <div class="custom-tabs">
+      <div class="custom-tab" :class="{active: activeName === '1'}" @click="switchTab('1')">
+        笔记（{{blogs.length}}）
+      </div>
+      <div class="custom-tab" :class="{active: activeName === '2'}" @click="switchTab('2')">
+        共同关注（{{commonFollows.length}}）
+      </div>
+    </div>
+
+    <!-- Tab 1: 笔记 -->
+    <div class="tab-content" v-show="activeName === '1'">
+      <div v-if="blogs.length === 0" class="empty-tab">
+        <div class="empty-icon">📝</div>
+        <div class="empty-title">还没有发布笔记</div>
+        <div class="empty-desc">这个人还没有分享任何内容</div>
+      </div>
+      <div v-for="b in blogs" :key="b.id" class="blog-item" @click="toBlogDetail(b)">
+        <div class="blog-img"><img :src="(b.images || '').split(',')[0]" alt=""></div>
+        <div class="blog-info">
+          <div class="blog-title">{{b.title}}</div>
+          <div class="blog-meta">
+            <span class="blog-liked" @click.stop="addLike(b)">
+              <svg viewBox="0 0 1024 1024" width="14" height="14">
+                <path d="M160 944c0 8.8-7.2 16-16 16h-32c-26.5 0-48-21.5-48-48V528c0-26.5 21.5-48 48-48h32c8.8 0 16 7.2 16 16v448zM96 416c-53 0-96 43-96 96v416c0 53 43 96 96 96h96c17.7 0 32-14.3 32-32V448c0-17.7-14.3-32-32-32H96zM505.6 64c16.2 0 26.4 8.7 31 13.9 4.6 5.2 12.1 16.3 10.3 32.4l-23.5 203.4c-4.9 42.2 8.6 84.6 36.8 116.4 28.3 31.7 68.9 49.9 111.4 49.9h271.2c6.6 0 10.8 3.3 13.2 6.1s5 7.5 4 14l-48 303.4c-6.9 43.6-29.1 83.4-62.7 112C815.8 944.2 773 960 728.9 960h-317c-33.1 0-59.9-26.8-59.9-59.9v-455c0-6.1 1.7-12 5-17.1 69.5-109 106.4-234.2 107-364h41.6z m0-64h-44.9C427.2 0 400 27.2 400 60.7c0 127.1-39.1 251.2-112 355.3v484.1c0 68.4 55.5 123.9 123.9 123.9h317c122.7 0 227.2-89.3 246.3-210.5l47.9-303.4c7.8-49.4-30.4-94.1-80.4-94.1H671.6c-50.9 0-90.5-44.4-84.6-95l23.5-203.4C617.7 55 568.7 0 505.6 0z" :fill="b.isLike ? '#FF2442' : '#ccc'"></path>
+              </svg>
+              {{b.liked || 0}}
+            </span>
+            <span class="blog-comments" @click.stop="openCommentDialog(b)">
+              <i class="el-icon-chat-dot-round"></i> {{b.comments || 0}}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 2: 共同关注 -->
+    <div class="tab-content" v-show="activeName === '2'">
+      <div v-if="commonFollows.length === 0" class="empty-tab">
+        <div class="empty-icon">🤝</div>
+        <div class="empty-title">暂无共同关注</div>
+        <div class="empty-desc">你们还没有共同关注的人</div>
+      </div>
+      <div v-for="u in commonFollows" :key="u.id" class="user-item">
+        <div class="user-item-avatar" @click="toOtherInfo(u.id)">
+          <img :src="u.icon || '/imgs/icons/default-icon.png'" alt="">
+        </div>
+        <div class="user-item-name" @click="toOtherInfo(u.id)">{{u.nickName}}</div>
+        <div class="user-item-btn follow-btn" @click="toOtherInfo(u.id)">去看看</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 评论弹窗 -->
+  <el-dialog title="发表评价" :visible.sync="commentDialogVisible" width="90%" :modal="true"
+             :before-close="() => commentDialogVisible = false" append-to-body>
+    <div style="margin-bottom:12px;color:#666;font-size:13px;">
+      评论笔记：<span style="color:#FF2442;">{{commentBlog && commentBlog.title}}</span>
+    </div>
+    <el-input type="textarea" :rows="4" placeholder="写下你的评价..."
+              v-model="commentInput" maxlength="500" show-word-limit>
+    </el-input>
+    <div style="margin-top:16px;text-align:right;">
+      <el-button @click="commentDialogVisible = false">取消</el-button>
+      <el-button type="danger" @click="submitComment()">发送评价</el-button>
+    </div>
+  </el-dialog>
+
+  <foot-bar :active-btn="0"></foot-bar>
+</div>
+<script src="./js/vue.js"></script>
+<script src="./js/axios.min.js"></script>
+<!-- 引入组件库 -->
+<script src="./js/element.js"></script>
+<script src="./js/common.js"></script>
+<script src="./js/footer.js"></script>
+<script>
+  const app = new Vue({
+    el: "#app",
+    data: {
+      util,
+      user: "",
+      loginUser: {},
+      activeName: "1",
+      info: {},
+      blogs: [],
+      followed: false,
+      commonFollows: [],
+      // 评论弹窗
+      commentDialogVisible: false,
+      commentBlog: null,
+      commentInput: '',
+    },
+    created() {
+      this.queryUser();
+      this.queryLoginUser();
+    },
+    methods: {
+      queryBlogs() {
+        axios.get("/blog/of/user", {
+            params: {id: this.user.id, current: 1}
+          })
+          .then(({data}) => this.blogs = data || [])
+          .catch(() => {})
+      },
+      queryLoginUser() {
+        axios.get("/user/me")
+          .then(({data}) => { this.loginUser = data; })
+          .catch(() => {})
+      },
+      queryUser() {
+        let id = util.getUrlParam("id")
+        axios.get("/user/" + id)
+          .then(({data}) => {
+            this.user = data;
+            this.queryUserInfo();
+            this.queryBlogs();
+            this.queryCommonFollow();
+            this.isFollowed();
+          })
+          .catch(() => {})
+      },
+      goBack() {
+        history.back();
+      },
+      queryUserInfo(id) {
+        axios.get("/user/info/" + this.user.id)
+          .then(({data}) => {
+            if (!data) return;
+            this.info = data;
+            sessionStorage.setItem("userInfo", JSON.stringify(data))
+          })
+          .catch(() => {})
+      },
+      queryCommonFollow() {
+        axios.get("/follow/common/" + this.user.id)
+          .then(({data}) => this.commonFollows = data || [])
+          .catch(() => {})
+      },
+      isFollowed() {
+        axios.get("/follow/or/not/" + this.user.id)
+          .then(({data}) => this.followed = data)
+          .catch(() => {})
+      },
+      follow() {
+        axios.put("/follow/" + this.user.id + "/" + !this.followed)
+          .then(() => {
+            this.$message.success(this.followed ? "已取消关注" : "已关注");
+            this.followed = !this.followed;
+          })
+          .catch(() => {})
+      },
+      switchTab(name) {
+        this.activeName = name;
+      },
+      addLike(b) {
+        axios.put("/blog/like/" + b.id)
+          .then(() => {
+            axios.get("/blog/" + b.id).then(({data}) => {
+              b.liked = data.liked;
+              b.isLike = data.isLike;
+            }).catch(() => {});
+          })
+          .catch(() => {});
+      },
+      openCommentDialog(b) {
+        this.commentBlog = b;
+        this.commentInput = '';
+        this.commentDialogVisible = true;
+      },
+      submitComment() {
+        if (!this.commentInput.trim()) {
+          this.$message.warning("请输入评价内容");
+          return;
+        }
+        axios.post("/blog-comments", {
+          blogId: this.commentBlog.id,
+          content: this.commentInput.trim()
+        }).then(() => {
+          this.$message.success("评价成功");
+          this.commentDialogVisible = false;
+          this.commentBlog.comments = (this.commentBlog.comments || 0) + 1;
+        }).catch(() => {
+          this.$message.error("评价失败，请先登录");
+        });
+      },
+      toOtherInfo(uid) {
+        location.href = "/other-info.html?id=" + uid;
+      },
+      toBlogDetail(b) {
+        location.href = "/blog-detail.html?id=" + b.id;
+      },
+    },
+
+  })
+</script>
+</body>
+
+</html>

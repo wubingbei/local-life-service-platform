@@ -2,7 +2,6 @@ package com.llsp.controller;
 
 import com.llsp.dto.Result;
 import com.llsp.repository.ChatHistoryRepository;
-import com.llsp.utils.SystemConstants;
 import com.llsp.utils.UserHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -57,9 +56,7 @@ public class AIChatController {
             log.warn("用户 {} 尝试访问不属于自己的会话 {}", userId, chatId);
             return Flux.just("会话不存在或无权限");
         }
-        // 2. 更新会话活跃时间
         chatHistoryRepository.save(userId, chatId);
-
         return serviceChatClient.prompt()
                 .user(prompt)
                 .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, chatId))

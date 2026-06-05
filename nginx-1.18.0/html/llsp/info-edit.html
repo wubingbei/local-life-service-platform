@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
+  <title>本地生活</title>
+  <!-- 引入样式 -->
+  <link rel="stylesheet" href="./css/element.css?v=20260603">
+  <link href="./css/main.css?v=20260603" rel="stylesheet">
+  <link href="./css/info.css?v=20260603" rel="stylesheet">
+
+  <style type="text/css">
+
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="header">
+    <div class="header-back-btn" @click="goBack" ><i class="el-icon-arrow-left"></i></div>
+    <div class="header-title">资料编辑</div>
+    <div class="header-placeholder"></div>
+  </div>
+  <div class="edit-container">
+    <div class="info-box">
+      <div class="info-item" @click="editAvatar">
+        <div class="info-label">头像</div>
+        <div class="info-btn">
+          <img width="35" :src="user.icon || '/imgs/icons/default-icon.png'" alt="">
+          <div><i class="el-icon-arrow-right"></i></div>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="info-item" @click="editNickname">
+        <div class="info-label">昵称</div>
+        <div class="info-btn">
+          <div>{{user.nickName}}</div>
+          <div><i class="el-icon-arrow-right"></i></div>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="info-item" @click="editIntroduce">
+        <div class="info-label">个人介绍</div>
+        <div class="info-btn">
+          <div style="text-align: right">{{info.introduce || '介绍一下自己'}}</div>
+          <div><i class="el-icon-arrow-right"></i></div>
+        </div>
+      </div>
+    </div>
+    <div class="info-box">
+      <div class="info-item" @click="editPhone">
+        <div class="info-label">手机号</div>
+        <div class="info-btn">
+          <div>{{user.phone || '绑定手机号'}}</div>
+          <div><i class="el-icon-arrow-right"></i></div>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="info-item" @click="editPassword">
+        <div class="info-label">密码</div>
+        <div class="info-btn">
+          <div>{{user.password ? '已设置' : '设置密码'}}</div>
+          <div><i class="el-icon-arrow-right"></i></div>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="info-item" @click="editGender">
+        <div class="info-label">性别</div>
+        <div class="info-btn">
+          <div>{{info.gender === false ? '男' : (info.gender === true ? '女' : '选择')}}</div>
+          <div><i class="el-icon-arrow-right"></i></div>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="info-item" @click="editCity">
+        <div class="info-label">城市</div>
+        <div class="info-btn">
+          <div>{{info.city || '选择'}}</div>
+          <div><i class="el-icon-arrow-right"></i></div>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="info-item" @click="editBirthday">
+        <div class="info-label">生日</div>
+        <div class="info-btn">
+          <div>{{info.birthday || '添加'}}</div>
+          <div><i class="el-icon-arrow-right"></i></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 生日选择弹窗 -->
+    <el-dialog title="选择生日" :visible.sync="birthdayDialogVisible" width="90%" :modal="true"
+               :before-close="() => birthdayDialogVisible = false" append-to-body>
+      <el-date-picker v-model="birthdayValue" type="date" placeholder="选择日期"
+        value-format="yyyy-MM-dd" style="width:100%">
+      </el-date-picker>
+      <div style="margin-top:16px;text-align:right;">
+        <el-button @click="birthdayDialogVisible = false">取消</el-button>
+        <el-button type="danger" @click="saveBirthday">确定</el-button>
+      </div>
+    </el-dialog>
+  </div>
+  <foot-bar :active-btn="4"></foot-bar>
+</div>
+<script src="./js/vue.js"></script>
+<script src="./js/axios.min.js"></script>
+<!-- 引入组件库 -->
+<script src="./js/element.js"></script>
+<script src="./js/common.js"></script>
+<script src="./js/footer.js"></script>
+<script>
+
+  const app = new Vue({
+    el: "#app",
+    data: {
+      user: "",
+      info: {},
+      // 生日选择弹窗
+      birthdayDialogVisible: false,
+      birthdayValue: '',
+    },
+    created() {
+      this.checkLogin();
+    },
+    methods: {
+      checkLogin() {
+        var self = this;
+        axios.get("/user/me")
+        .then(function(res) {
+          self.user = res.data;
+          // 优先使用 sessionStorage 缓存，同时从后端加载确保数据最新
+          var cached = sessionStorage.getItem("userInfo");
+          self.info = cached ? JSON.parse(cached) : {};
+          // 从后端API加载 UserInfo（确保数据完整）
+          axios.get("/user/info/" + self.user.id).then(function(r) {
+            if (r.data) {
+              self.info = r.data;
+              sessionStorage.setItem("userInfo", JSON.stringify(r.data));
+            }
+          }).catch(function() {});
+        })
+        .catch(function(err) {
+          self.$message({ message: err || "请先登录", type: "error", center: true });
+          setTimeout(function() { location.href = "login.html"; }, 1000);
+        })
+      },
+      refreshUser() {
+        var self = this;
+        axios.get("/user/me").then(function(res) {
+          self.user = res.data;
+        }).catch(function() {});
+        axios.get("/user/info/" + this.user.id).then(function(res) {
+          if (res.data) {
+            self.info = res.data;
+            sessionStorage.setItem("userInfo", JSON.stringify(res.data));
+          }
+        }).catch(function() {});
+      },
+      // 保存到后端
+      saveInfo(params) {
+        var self = this;
+        axios.put("/user/info", params)
+          .then(function() {
+            self.$message({ message: "保存成功", type: "success", center: true });
+            self.refreshUser();
+          })
+          .catch(function(err) {
+            self.$message({ message: err || "保存失败", type: "error", center: true });
+          });
+      },
+      // 编辑头像（弹窗输入URL）
+      editAvatar() {
+        this.$prompt('请输入头像图片链接', '修改头像', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          inputValue: this.user.icon || ''
+        }).then(({ value }) => {
+          if (value && value.trim()) {
+            this.saveInfo({ icon: value.trim() });
+          }
+        }).catch(() => {});
+      },
+      // 编辑昵称
+      editNickname() {
+        this.$prompt('请输入新昵称', '修改昵称', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          inputValue: this.user.nickName || '',
+          inputPattern: /\S+/,
+          inputErrorMessage: '昵称不能为空'
+        }).then(({ value }) => {
+          if (value && value.trim()) {
+            this.saveInfo({ nickName: value.trim() });
+          }
+        }).catch(() => {});
+      },
+      // 编辑个人介绍
+      editIntroduce() {
+        this.$prompt('介绍一下自己吧', '修改个人介绍', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          inputValue: this.info.introduce || '',
+          inputType: 'textarea',
+          inputRows: 3
+        }).then(({ value }) => {
+          this.saveInfo({ introduce: value || '' });
+        }).catch(() => {});
+      },
+      // 编辑性别
+      editGender() {
+        this.$confirm('选择性别', '修改性别', {
+          confirmButtonText: '女',
+          cancelButtonText: '男',
+          distinguishCancelAndClose: true,
+        }).then(() => {
+          this.saveInfo({ gender: true }); // true = 女 (DB 1)
+        }).catch(action => {
+          if (action === 'cancel') {
+            this.saveInfo({ gender: false }); // false = 男 (DB 0)
+          }
+        });
+      },
+      // 编辑城市
+      editCity() {
+        this.$prompt('请输入所在城市', '修改城市', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          inputValue: this.info.city || ''
+        }).then(({ value }) => {
+          this.saveInfo({ city: value || '' });
+        }).catch(() => {});
+      },
+      // 编辑密码
+      editPassword() {
+        var self = this;
+        this.$prompt('请输入新密码', '设置密码', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          inputType: 'password',
+          inputPattern: /\S{6,}/,
+          inputErrorMessage: '密码长度至少6位'
+        }).then(({ value }) => {
+          if (value && value.trim()) {
+            axios.put("/user/info", { password: value.trim() })
+              .then(function() {
+                self.$message({ message: "密码设置成功", type: "success", center: true });
+                self.refreshUser();
+              })
+              .catch(function(err) {
+                self.$message({ message: err || "密码设置失败", type: "error", center: true });
+              });
+          }
+        }).catch(() => {});
+      },
+      // 编辑手机号
+      editPhone() {
+        this.$prompt('请输入手机号', '绑定手机号', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          inputValue: this.user.phone || '',
+          inputPattern: /^1[3-9]\d{9}$/,
+          inputErrorMessage: '请输入正确的手机号'
+        }).then(({ value }) => {
+          if (value && value.trim()) {
+            this.saveInfo({ phone: value.trim() });
+          }
+        }).catch(() => {});
+      },
+      // 编辑生日（日期选择器）
+      editBirthday() {
+        this.birthdayValue = this.info.birthday || '';
+        this.birthdayDialogVisible = true;
+      },
+      saveBirthday() {
+        if (this.birthdayValue) {
+          this.saveInfo({ birthday: this.birthdayValue });
+        }
+        this.birthdayDialogVisible = false;
+      },
+      goBack(){
+        history.back();
+      }
+    },
+
+  })
+</script>
+</body>
+</html>

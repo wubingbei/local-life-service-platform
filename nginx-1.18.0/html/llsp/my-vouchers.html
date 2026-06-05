@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
+  <title>本地生活</title>
+  <link rel="stylesheet" href="./css/element.css?v=20260603">
+  <link href="./css/main.css?v=20260603" rel="stylesheet">
+  <style type="text/css">
+    body { background: #f5f5f5; }
+    #app { padding-bottom: 60px; min-height: 100vh; }
+    .voucher-card {
+      background: #fff; border-radius: 12px; margin: 12px 16px;
+      padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      position: relative; overflow: hidden;
+    }
+    .voucher-card::before {
+      content: ''; position: absolute; top: 0; left: 0;
+      width: 4px; height: 100%;
+      background: linear-gradient(180deg, #FF2442, #FF6B6B);
+    }
+    .voucher-shop { font-size: 13px; color: #999; margin-bottom: 6px; }
+    .voucher-title { font-size: 17px; font-weight: 600; color: #333; margin-bottom: 4px; }
+    .voucher-subtitle { font-size: 12px; color: #999; margin-bottom: 12px; }
+    .voucher-price-row { display: flex; align-items: baseline; margin-bottom: 10px; }
+    .voucher-value { font-size: 28px; font-weight: 700; color: #FF2442; }
+    .voucher-value span { font-size: 14px; }
+    .voucher-pay { font-size: 13px; color: #999; margin-left: 8px; }
+    .voucher-pay del { margin-right: 4px; }
+    .voucher-status {
+      display: inline-block; padding: 2px 8px; border-radius: 4px;
+      font-size: 11px; margin-bottom: 8px;
+    }
+    .status-1 { background: #FFF3E0; color: #FF9800; }
+    .status-2 { background: #E8F5E9; color: #4CAF50; }
+    .status-3 { background: #E3F2FD; color: #2196F3; }
+    .status-4 { background: #F5F5F5; color: #999; }
+    .voucher-rules { font-size: 12px; color: #999; line-height: 1.5; padding-top: 8px; border-top: 1px dashed #eee; }
+    .voucher-time { font-size: 12px; color: #ccc; margin-top: 6px; }
+    .empty-page {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; height: 60vh; color: #999;
+    }
+    .empty-page .icon { font-size: 64px; margin-bottom: 16px; }
+    .empty-page .title { font-size: 16px; margin-bottom: 8px; }
+    .empty-page .desc { font-size: 13px; color: #ccc; }
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="header">
+    <div class="header-back-btn" @click="goBack"><i class="el-icon-arrow-left"></i></div>
+    <div class="header-title">我的优惠券</div>
+    <div class="header-placeholder"></div>
+  </div>
+
+  <div v-if="loading" style="text-align:center;padding:40px;color:#999;">加载中...</div>
+
+  <div v-else-if="vouchers.length === 0" class="empty-page">
+    <div class="icon">🎫</div>
+    <div class="title">还没有优惠券</div>
+    <div class="desc">去逛逛店铺，抢购优惠券吧</div>
+  </div>
+
+  <div v-else>
+    <div class="voucher-card" v-for="v in vouchers" :key="v.orderId">
+      <div class="voucher-shop">{{v.shopName}}</div>
+      <div class="voucher-title">{{v.title}}</div>
+      <div class="voucher-subtitle" v-if="v.subTitle">{{v.subTitle}}</div>
+      <div class="voucher-price-row">
+        <div class="voucher-value"><span>¥</span>{{util.formatPrice(v.actualValue)}}</div>
+        <div class="voucher-pay"><del>¥{{util.formatPrice(v.payValue)}}</del> 面值</div>
+      </div>
+      <div style="font-size:12px;color:#999;margin-bottom:10px;">
+        实付 <span style="color:#FF2442;">¥{{util.formatPrice(v.payValue)}}</span>，立省 <span style="color:#FF2442;">¥{{util.formatPrice(v.actualValue - v.payValue)}}</span>
+      </div>
+      <div class="voucher-status" :class="'status-' + (v.status || 0)">
+        {{v.status === 1 ? '未支付' : v.status === 2 ? '已支付' : v.status === 3 ? '已核销' : v.status === 4 ? '已取消' : v.status === 5 ? '退款中' : v.status === 6 ? '已退款' : '待确认'}}
+      </div>
+      <div class="voucher-rules" v-if="v.rules">使用规则：{{v.rules}}</div>
+      <div class="voucher-time">抢购时间：{{v.createTime || '-'}}</div>
+    </div>
+  </div>
+
+  <foot-bar :active-btn="4"></foot-bar>
+</div>
+<script src="./js/vue.js"></script>
+<script src="./js/axios.min.js"></script>
+<script src="./js/element.js"></script>
+<script src="./js/common.js"></script>
+<script src="./js/footer.js"></script>
+<script>
+  const app = new Vue({
+    el: "#app",
+    data: {
+      util,
+      vouchers: [],
+      loading: true
+    },
+    created() {
+      this.queryMyVouchers();
+    },
+    methods: {
+      goBack() {
+        history.back();
+      },
+      queryMyVouchers() {
+        var self = this;
+        axios.get("/voucher-order/my")
+          .then(function(res) {
+            self.vouchers = res.data || [];
+            self.loading = false;
+          })
+          .catch(function(err) {
+            console.error('加载优惠券失败:', err);
+            self.loading = false;
+            self.$message({ message: err || "加载失败，请先登录", type: "error", center: true });
+          });
+      }
+    }
+  })
+</script>
+</body>
+</html>

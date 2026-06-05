@@ -2,10 +2,7 @@ package com.llsp.controller;
 
 import com.llsp.dto.Result;
 import com.llsp.service.IVoucherOrderService;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import jakarta.annotation.Resource;
 
@@ -20,5 +17,15 @@ public class VoucherOrderController {
     @PostMapping("seckill/{id}")
     public Result seckillVoucher(@PathVariable("id") Long voucherId) {
         return voucherOrderService.seckillVoucher(voucherId);
+    }
+
+    @PostMapping("buy/{id}")
+    public Result buyRegularVoucher(@PathVariable("id") Long voucherId) {
+        return voucherOrderService.buyRegularVoucher(voucherId);
+    }
+
+    @GetMapping("/my")
+    public Result queryMyVouchers() {
+        return voucherOrderService.queryMyVouchers();
     }
 }

@@ -71,8 +71,9 @@ public class Shop implements Serializable {
     private Integer sold;
 
     /**
-     * 评论数量
+     * 评论数量（非数据库字段，由 Service 层实时统计 tb_shop_comments 表得出）
      */
+    @TableField(exist = false)
     private Integer comments;
 
     /**

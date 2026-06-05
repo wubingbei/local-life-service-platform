@@ -11,9 +11,11 @@ import com.llsp.service.IUserInfoService;
 import com.llsp.service.IUserService;
 import com.llsp.utils.UserHolder;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.annotation.Resource;
+import java.util.Map;
 
 @Slf4j
 @RestController
@@ -25,13 +27,15 @@ public class UserController {
 
     @Resource
     private IUserInfoService userInfoService;
+    @Resource
+    private PasswordEncoder passwordEncoder;
 
     /**
-     * 发送手机验证码
+     * 发送短信验证码
+     * @param phone 手机号
      */
     @PostMapping("code")
     public Result sendCode(@RequestParam("phone") String phone) {
-        //发送短信验证码并保存验证码
         return userService.sendCode(phone);
     }
 
@@ -77,7 +81,6 @@ public class UserController {
         return Result.ok(info);
     }
 
-
     @GetMapping("/{id}")
     public Result queryUserById(@PathVariable("id") Long userId){
         // 查询详情
@@ -88,6 +91,43 @@ public class UserController {
         UserDTO userDTO = BeanUtil.copyProperties(user, UserDTO.class);
         // 返回
         return Result.ok(userDTO);
+    }
+
+    @PutMapping("/info")
+    public Result updateInfo(@RequestBody Map<String, Object> params){
+        // 获取当前登录用户
+        Long userId = UserHolder.getUser().getId();
+        // 更新 tb_user 表（昵称、头像）
+        User user = new User();
+        user.setId(userId);
+        boolean updateUser = false;
+        if (params.containsKey("nickName")) {
+            user.setNickName((String) params.get("nickName"));
+            updateUser = true;
+        }
+        if (params.containsKey("icon")) {
+            user.setIcon((String) params.get("icon"));
+            updateUser = true;
+        }
+        if (params.containsKey("phone")) {
+            user.setPhone((String) params.get("phone"));
+            updateUser = true;
+        }
+        if (params.containsKey("password")) {
+            user.setPassword(passwordEncoder.encode((String) params.get("password")));
+            updateUser = true;
+        }
+        if (updateUser) userService.updateById(user);
+        // 更新 tb_user_info 表
+        UserInfo info = new UserInfo();
+        info.setUserId(userId);
+        if (params.containsKey("city")) info.setCity((String) params.get("city"));
+        if (params.containsKey("introduce")) info.setIntroduce((String) params.get("introduce"));
+        if (params.containsKey("gender")) info.setGender((Boolean) params.get("gender"));
+        if (params.containsKey("birthday")) info.setBirthday(java.time.LocalDate.parse((String) params.get("birthday")));
+        // 使用 saveOrUpdate 自动处理插入或更新，避免并发冲突
+        userInfoService.saveOrUpdate(info);
+        return Result.ok();
     }
 
     @PostMapping("/sign")

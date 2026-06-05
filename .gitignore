@@ -41,3 +41,19 @@ config/local/
 secrets/
 *.pem
 *.key
+
+### Claude Code ###
+.claude/
+
+### Nginx (local dev only, not for production) ###
+nginx-*/logs/
+nginx-*/temp/
+nginx-*/contrib/
+nginx-*/docs/
+nginx-*/conf/fastcgi.conf
+nginx-*/conf/fastcgi_params
+nginx-*/conf/scgi_params
+nginx-*/conf/uwsgi_params
+nginx-*/conf/koi-utf
+nginx-*/conf/koi-win
+nginx-*/conf/win-utf

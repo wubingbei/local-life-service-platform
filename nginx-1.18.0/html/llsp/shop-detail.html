@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
+  <title>本地生活</title>
+  <!-- 引入样式 -->
+  <link rel="stylesheet" href="./css/element.css?v=20260603">
+
+  <link href="./css/shop-detail.css?v=20260603" rel="stylesheet">
+  <link href="./css/main.css?v=20260603" rel="stylesheet">
+
+  <style type="text/css">
+      #app { height: 100vh; display: flex; flex-direction: column; overflow: hidden; background: #fff; }
+      .scroll-content { flex: 1; overflow-y: auto; min-height: 0; }
+      body { background: #fff; }
+      .comment-submit-btn.sending { background: #ccc; pointer-events: none; }
+      .comment-del { font-size: 20px; color: #ccc; cursor: pointer; padding: 0 6px; flex-shrink: 0; }
+      .comment-del:hover { color: #E85D5D; }
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="header">
+    <div class="header-back-btn" @click="goBack"><i class="el-icon-arrow-left"></i></div>
+    <div class="header-title"></div>
+    <div class="header-share">...</div>
+  </div>
+  <div class="scroll-content">
+  <div class="shop-info-box">
+    <div class="shop-title">{{shop.name}}</div>
+    <div class="shop-rate">
+      <el-rate
+          disabled v-model="shop.score/10"
+          text-color="#FF2442"
+          show-score
+      ></el-rate>
+      <span>{{shop.comments}}条</span>
+    </div>
+    <div class="shop-rate-info"> 口味:4.9  环境:4.8  服务:4.7 </div>
+    <div class="shop-rank">
+      <img src="/imgs/bd.png" width="63" height="20" alt="">
+      <span>拱墅区好评榜第3名</span>
+      <div><i class="el-icon-arrow-right"></i></div>
+    </div>
+    <div class="shop-images">
+      <div v-for="(s,i) in shop.images" :key="i">
+        <img :src="s" alt="">
+      </div>
+    </div>
+    <div class="shop-address">
+      <div><i class="el-icon-map-location"></i></div>
+      <span>{{shop.address}}</span>
+      <div style="width: 10px; flex-grow: 2; text-align: center; color: #e1e2e3">|</div>
+      <div style="margin: 0 5px"><img src="https://p0.meituan.net/travelcube/bf684aa196c870810655e45b1e52ce843484.png@24w_16h_40q" alt=""></div>
+      <div><img src="https://p0.meituan.net/travelcube/9277ace32123e0c9f59dedf4407892221566.png@24w_24h_40q" alt=""></div>
+    </div>
+  </div>
+  <div class="shop-open-time">
+    <span><i class="el-icon-watch"></i></span>
+    <div>营业时间</div>
+    <div>{{shop.openHours}}</div>
+    <span class="line-right">查看详情 <i class="el-icon-arrow-right"></i></span>
+  </div>
+  <div class="shop-voucher">
+    <div>
+      <span class="voucher-icon">券</span>
+      <span style="font-weight: bold;">代金券</span>
+    </div>
+    <div class="voucher-box" v-for="v in vouchers" :key="v.id" v-if="!isEnd(v)">
+      <div class="voucher-circle">
+        <div class="voucher-b"></div>
+        <div class="voucher-b"></div>
+        <div class="voucher-b"></div>
+      </div>
+      <div class="voucher-left">
+        <div class="voucher-title">{{v.title}}</div>
+        <div class="voucher-subtitle">{{v.subTitle}}</div>
+        <div class="voucher-price"><div>￥ {{util.formatPrice(v.payValue)}}</div>  <span>{{(v.payValue*10)/v.actualValue}}折</span></div>
+      </div>
+      <div class="voucher-right">
+        <div v-if="v.type" class="seckill-box">
+          <div class="voucher-btn" :class="{'disable-btn': isPurchased(v) || isNotBegin(v) || v.stock < 1}" @click="seckill(v)">{{isPurchased(v) ? '已购买' : (isNotBegin(v) ? '即将开始' : (v.stock < 1 ? '已抢光' : '限时抢购'))}}</div>
+          <div class="seckill-stock">剩余 <span>{{v.stock}}</span> 张</div>
+          <div class="seckill-time">{{formatTime(v)}}</div>
+        </div>
+        <div class="voucher-btn" v-else :class="{'disable-btn': isPurchased(v)}" @click="seckill(v)">{{isPurchased(v) ? '已购买' : '抢购'}}</div>
+      </div>
+    </div>
+  </div>
+  <div class="shop-comments">
+    <div class="comments-head">
+      <div>网友评价 <span>（{{comments.length}}）</span></div>
+    </div>
+    <!-- 发表评价 -->
+    <div class="comment-input-box">
+      <input v-model="commentText" placeholder="写下你的评价..." class="comment-input"
+             @keyup.enter="addComment()" :disabled="sending" />
+      <div class="comment-submit-btn" :class="{sending: sending}" @click="addComment()">{{sending ? '发送中...' : '发送'}}</div>
+    </div>
+    <!-- 评价列表 -->
+    <div class="comment-list" v-if="comments.length > 0">
+      <div class="comment-box" v-for="c in comments" :key="c.id">
+        <div class="comment-icon">
+          <img :src="c.userIcon || '/imgs/icons/default-icon.png'" alt="">
+        </div>
+        <div class="comment-info">
+          <div class="comment-user">{{c.userName || '用户'}}</div>
+          <div class="comment-text">{{c.content}}</div>
+          <div class="comment-time">{{c.createTime}}</div>
+        </div>
+        <div class="comment-del" v-if="canDelete(c)" @click.stop="deleteComment(c.id)">×</div>
+      </div>
+    </div>
+    <div v-else class="comment-empty">暂无评价，来发表第一条评论吧</div>
+  </div>
+  </div><!-- /scroll-content -->
+</div>
+<script src="./js/vue.js"></script>
+<script src="./js/axios.min.js"></script>
+<!-- 引入组件库 -->
+<script src="./js/element.js"></script>
+<script src="./js/common.js"></script>
+<script>
+
+  const app = new Vue({
+    el: "#app",
+    data: {
+      util,
+      shop: {},
+      vouchers: [],
+      comments: [],
+      commentText: '',
+      sending: false,  // 防止重复提交
+      purchasedIds: []  // 用户已购买的优惠券ID
+    },
+    created() {
+      // 获取参数
+      let shopId = util.getUrlParam("id");
+      // 查询酒店信息
+      this.queryShopById(shopId);
+      // 查询优惠券信息
+      this.queryVoucher(shopId);
+      // 查询评论
+      this.queryComments(shopId);
+      // 查询登录用户
+      this.queryLoginUser();
+      // 查询用户已购买的优惠券
+      this.queryMyPurchasedVouchers();
+    },
+    methods: {
+      goBack() {
+        history.back();
+      },
+      queryShopById(shopId) {
+        axios.get("/shop/" + shopId)
+        .then(({data}) => {
+          data.images = data.images.split(",")
+          this.shop = data
+        })
+        .catch(err => this.$message.error(err))
+      },
+      queryVoucher(shopId) {
+        axios.get("/voucher/list/" + shopId)
+        .then(({data}) => {
+          this.vouchers = data;
+        })
+        .catch(err => this.$message.error(err))
+      },
+      formatTime(v){
+        let b = new Date(v.beginTime);
+        let e = new Date(v.endTime);
+        return b.getMonth() + 1 + "月" + b.getDate() + "日 "
+          +  b.getHours() + ":" + this.formatMinutes(b.getMinutes())
+          + " ~ "/*  + e.getMonth() + 1 + "月" + e.getDate() + "日 " */
+          +  e.getHours() + ":" + this.formatMinutes(e.getMinutes());
+      },
+      formatMinutes(m){
+        if(m < 10) m = "0" + m
+        return m;
+      },
+      isNotBegin(v){
+        return new Date(v.beginTime).getTime() > new Date().getTime();
+      },
+      isEnd(v){
+        return new Date(v.endTime).getTime() < new Date().getTime();
+      },
+      queryComments(shopId) {
+        axios.get("/shop-comments/of/" + shopId)
+          .then(({data}) => {
+            this.comments = data || [];
+          })
+          .catch(() => {});
+      },
+      queryLoginUser(){
+        var self = this;
+        axios.get("/user/me")
+          .then(function(res) {
+            self.user = res.data;
+          })
+          .catch(function() {});
+      },
+      queryMyPurchasedVouchers(){
+        var self = this;
+        // 先从 sessionStorage 恢复（快速渲染，防止白屏）
+        var saved = sessionStorage.getItem('purchasedIds');
+        if (saved) {
+          try { self.purchasedIds = JSON.parse(saved); } catch(e) {}
+        }
+        // 服务器数据为唯一真相来源，直接覆盖本地
+        axios.get("/voucher-order/my")
+          .then(function(res) {
+            var orders = res.data || [];
+            var serverIds = orders.map(function(o) { return o.voucherId; });
+            self.purchasedIds = serverIds;
+            sessionStorage.setItem('purchasedIds', JSON.stringify(serverIds));
+          })
+          .catch(function() {
+            // 服务器失败，保留本地缓存
+          });
+      },
+      savePurchasedId(voucherId) {
+        var self = this;
+        if (self.purchasedIds.indexOf(voucherId) === -1) {
+          self.purchasedIds.push(voucherId);
+          sessionStorage.setItem('purchasedIds', JSON.stringify(self.purchasedIds));
+        }
+      },
+      isPurchased(v) {
+        return this.purchasedIds.indexOf(v.id) !== -1;
+      },
+      addComment() {
+        var self = this;
+        if (self.sending) return;  // 防止重复提交
+        var content = self.commentText.trim();
+        if (!content) {
+          self.$message({ message: "请输入评价内容", type: "warning", center: true });
+          return;
+        }
+        var shopId = util.getUrlParam("id");
+        // 立即清空输入框并乐观添加到列表
+        self.commentText = '';
+        self.sending = true;
+        // 乐观更新：立即将评论添加到列表顶部
+        var tempId = 'opt_' + Date.now();
+        var optimistic = {
+          id: tempId,
+          userId: (self.user && self.user.id) || 0,
+          userName: (self.user && (self.user.nickName || self.user.username)) || '我',
+          userIcon: (self.user && self.user.icon) || '',
+          content: content,
+          createTime: '刚刚',
+          liked: 0,
+          _optimistic: true
+        };
+        self.comments.unshift(optimistic);
+        axios.post("/shop-comments", {
+          shopId: shopId,
+          content: content
+        }).then(function() {
+          // 用服务器数据替换乐观条目
+          axios.get("/shop-comments/of/" + shopId).then(function(r) {
+            self.comments = (r.data || []).map(function(c) {
+              c._optimistic = false;
+              return c;
+            });
+            self.sending = false;
+            self.$message({ message: "评价成功", type: "success", center: true });
+            // 刷新商户评论数
+            axios.get("/shop/" + shopId).then(function(r2) {
+              var d = r2.data;
+              d.images = d.images.split(",");
+              self.shop = d;
+            });
+          }).catch(function() {
+            self.comments = self.comments.filter(function(c) { return c.id !== tempId; });
+            self.sending = false;
+          });
+        }).catch(function(err) {
+          // 失败：移除乐观条目，恢复输入内容
+          self.comments = self.comments.filter(function(c) { return c.id !== tempId; });
+          self.commentText = content;
+          self.sending = false;
+          console.error('评论失败:', err);
+          self.$message({ message: err || '评价失败，请先登录', type: "error", center: true });
+        });
+      },
+
+      canDelete(c) {
+        return this.user && this.user.id === c.userId;
+      },
+      deleteComment(id) {
+        var self = this;
+        self.$confirm('确定要删除这条评论吗？', '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }).then(function() {
+          // 保存完整列表快照，用于失败时恢复（保持原始顺序）
+          var backup = self.comments.slice();
+          // 乐观更新：立即从列表中移除（字符串比较确保类型一致）
+          self.comments = self.comments.filter(function(c) {
+            return String(c.id) !== String(id);
+          });
+          axios.delete("/shop-comments/" + id).then(function() {
+            self.$message({ message: "已删除", type: "success", center: true });
+            // 刷新商户数据
+            var shopId = util.getUrlParam("id");
+            axios.get("/shop/" + shopId).then(function(r) {
+              var d = r.data;
+              d.images = d.images.split(",");
+              self.shop = d;
+            });
+          }).catch(function(err) {
+            // 删除失败：从服务器重新拉取确保数据一致
+            var shopId = util.getUrlParam("id");
+            axios.get("/shop-comments/of/" + shopId).then(function(r) {
+              self.comments = r.data || [];
+            }).catch(function() {
+              // 网络完全断开时恢复备份
+              self.comments = backup;
+            });
+            self.$message({ message: err || "删除失败", type: "error", center: true });
+          });
+        }).catch(function() {});
+      },
+
+      seckill(v){
+        var self = this;
+        if(!token){
+          self.$message({ message: "请先登录", type: "error", center: true });
+          setTimeout(function() {
+            location.href = "/login.html";
+          }, 800);
+          return;
+        }
+        if(self.isNotBegin(v)){
+          self.$message({ message: "优惠券抢购尚未开始！", type: "error", center: true });
+          return;
+        }
+        if(self.isEnd(v)){
+          self.$message({ message: "优惠券抢购已经结束！", type: "error", center: true });
+          return;
+        }
+        if(self.purchasedIds.indexOf(v.id) !== -1){
+          self.$message({ message: "您已经抢购过该优惠券了", type: "warning", center: true });
+          return;
+        }
+        var id = v.id;
+        var isSeckill = v.type == 1;
+        // 秒杀券额外检查库存
+        if (isSeckill && v.stock < 1) {
+          self.$message({ message: "库存不足，请刷新再试试！", type: "error", center: true });
+          return;
+        }
+        // 普通券走 buy 接口，秒杀券走 seckill 接口
+        var url = isSeckill ? "/voucher-order/seckill/" + id : "/voucher-order/buy/" + id;
+        axios.post(url)
+        .then(function(res) {
+          self.$message({ message: "抢购成功，订单id：" + res.data, type: "success", center: true });
+          self.savePurchasedId(id);
+          if (isSeckill) {
+            var shopId = util.getUrlParam("id");
+            axios.get("/voucher/list/" + shopId).then(function(r) {
+              self.vouchers = r.data || [];
+            });
+          }
+        })
+        .catch(function(err) {
+          self.$message({ message: err || "抢购失败", type: "error", center: true });
+          if(err === "不能重复下单") {
+            self.savePurchasedId(id);
+          }
+          if (isSeckill) {
+            var shopId = util.getUrlParam("id");
+            axios.get("/voucher/list/" + shopId).then(function(r) {
+              self.vouchers = r.data || [];
+            });
+          }
+        });
+      }
+    }
+  })
+</script>
+</body>
+</html>

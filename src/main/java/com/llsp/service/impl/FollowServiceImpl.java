@@ -81,4 +81,40 @@ public class FollowServiceImpl extends ServiceImpl<FollowMapper, Follow> impleme
                 .collect(Collectors.toList());
         return Result.ok(users);
     }
+
+    @Override
+    public Result getMyFollowers() {
+        // 1.获取当前用户
+        Long userId = UserHolder.getUser().getId();
+        // 2.查询关注我的人（follow_user_id = 当前用户id）
+        List<Follow> follows = query().eq("follow_user_id", userId).list();
+        if (follows == null || follows.isEmpty()) {
+            return Result.ok(Collections.emptyList());
+        }
+        // 3.获取粉丝用户id列表
+        List<Long> followerIds = follows.stream().map(Follow::getUserId).collect(Collectors.toList());
+        // 4.查询用户信息
+        List<UserDTO> users = userService.listByIds(followerIds).stream()
+                .map(user -> BeanUtil.copyProperties(user, UserDTO.class))
+                .collect(Collectors.toList());
+        return Result.ok(users);
+    }
+
+    @Override
+    public Result getMyFollowing() {
+        // 1.获取当前用户
+        Long userId = UserHolder.getUser().getId();
+        // 2.查询我关注的人（user_id = 当前用户id）
+        List<Follow> follows = query().eq("user_id", userId).list();
+        if (follows == null || follows.isEmpty()) {
+            return Result.ok(Collections.emptyList());
+        }
+        // 3.获取关注用户id列表
+        List<Long> followingIds = follows.stream().map(Follow::getFollowUserId).collect(Collectors.toList());
+        // 4.查询用户信息
+        List<UserDTO> users = userService.listByIds(followingIds).stream()
+                .map(user -> BeanUtil.copyProperties(user, UserDTO.class))
+                .collect(Collectors.toList());
+        return Result.ok(users);
+    }
 }

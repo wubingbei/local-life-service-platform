@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
+    <title>本地生活 · AI助手</title>
+    <link rel="stylesheet" href="./css/element.css?v=20260603">
+    <link href="./css/main.css?v=20260603" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        #app {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: #f0f2f5;
+            padding-bottom: 0 !important;
+        }
+        .header {
+            background: #E85D5D;
+            color: white;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            flex-shrink: 0;
+        }
+        .header-back { font-size: 20px; cursor: pointer; margin-right: 10px; }
+        .header-title { font-size: 16px; font-weight: 600; flex: 1; }
+        .chat-bar {
+            display: flex;
+            align-items: center;
+            padding: 6px 12px;
+            background: #fff;
+            border-bottom: 1px solid #eee;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+        .chat-bar select {
+            flex: 1;
+            padding: 6px 8px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 13px;
+            outline: none;
+            min-width: 0;
+        }
+        .btn-sm {
+            padding: 6px 10px;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .btn-new { background: #E85D5D; color: white; }
+        .btn-del { background: #f0f0f0; color: #999; }
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .bubble {
+            max-width: 82%;
+            padding: 10px 14px;
+            border-radius: 14px;
+            line-height: 1.55;
+            font-size: 14px;
+            word-break: break-all;
+            white-space: pre-wrap;
+        }
+        .bubble.user {
+            align-self: flex-end;
+            background: #E85D5D;
+            color: #fff;
+            border-bottom-right-radius: 4px;
+        }
+        .bubble.ai {
+            align-self: flex-start;
+            background: #fff;
+            color: #333;
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .bubble-role { font-size: 11px; opacity: 0.7; margin-bottom: 3px; }
+        .empty {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #bbb;
+            gap: 10px;
+        }
+        .empty-icon { font-size: 52px; }
+        .typing { display: flex; gap: 4px; }
+        .typing span {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: #aaa;
+            animation: bounce 1.4s infinite ease-in-out;
+        }
+        .typing span:nth-child(2) { animation-delay: 0.2s; }
+        .typing span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes bounce {
+            0%,80%,100%{transform:scale(0.5);opacity:0.4}
+            40%{transform:scale(1);opacity:1}
+        }
+        .input-bar {
+            display: flex;
+            padding: 10px 14px;
+            background: #fff;
+            border-top: 1px solid #eee;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        .input-bar input {
+            flex: 1;
+            padding: 9px 14px;
+            border: 1px solid #ddd;
+            border-radius: 22px;
+            font-size: 14px;
+            outline: none;
+        }
+        .input-bar input:focus { border-color: #E85D5D; }
+        .input-bar button {
+            padding: 9px 20px;
+            border: none;
+            border-radius: 22px;
+            font-size: 14px;
+            cursor: pointer;
+            background: #E85D5D;
+            color: white;
+            flex-shrink: 0;
+        }
+        .input-bar button:disabled { background: #ccc; cursor: not-allowed; }
+        /* Markdown 渲染内容样式 */
+        .md-content { word-break: normal; white-space: normal; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .md-content p { margin: 4px 0; line-height: 1.6; }
+        .md-content strong { font-weight: 600; color: #222; }
+        .md-content table { border-collapse: collapse; margin: 8px 0; font-size: 12px; white-space: nowrap; }
+        .md-content th { background: #f5f5f5; padding: 6px 8px; border: 1px solid #e0e0e0; text-align: left; font-weight: 600; }
+        .md-content td { padding: 5px 8px; border: 1px solid #e0e0e0; }
+        .md-content tr:nth-child(even) td { background: #fafafa; }
+        .md-content ul, .md-content ol { padding-left: 18px; margin: 4px 0; }
+        .md-content li { margin: 2px 0; line-height: 1.5; }
+        .md-content hr { border: none; border-top: 1px solid #eee; margin: 8px 0; }
+    </style>
+</head>
+<body>
+<div id="app">
+    <div class="header">
+        <div class="header-back" @click="goBack">←</div>
+        <div class="header-title">🤖 AI 助手</div>
+    </div>
+    <div class="chat-bar">
+        <select v-model="currentChatId" @change="loadMessages">
+            <option value="">-- 选择会话 --</option>
+            <option v-for="c in chatList" :key="c" :value="c">{{c}}</option>
+        </select>
+        <button class="btn-sm btn-new" @click="newChat">+ 新建</button>
+        <button class="btn-sm btn-del" @click="delChat" v-if="currentChatId">删除</button>
+    </div>
+    <div class="messages" ref="msgBox">
+        <div class="empty" v-if="messages.length === 0 && !loading">
+            <div class="empty-icon">💬</div>
+            <div>发送消息，开始对话</div>
+        </div>
+        <div v-for="(m,i) in messages" :key="i" class="bubble" :class="m.role === 'user' ? 'user' : 'ai'">
+            <div class="bubble-role">{{m.role === 'user' ? '我' : 'AI 助手'}}</div>
+            <div v-if="m.role === 'user'">{{m.content}}</div>
+            <div v-else class="md-content" v-html="renderMarkdown(m.content)"></div>
+        </div>
+        <div v-if="loading" class="bubble ai">
+            <div class="bubble-role">AI 助手</div>
+            <div class="typing"><span></span><span></span><span></span></div>
+        </div>
+    </div>
+    <div class="input-bar">
+        <input v-model="input" placeholder="输入消息..." @keypress.enter="send">
+        <button :disabled="loading || !currentChatId" @click="send">发送</button>
+    </div>
+</div>
+<script src="./js/vue.js"></script>
+<script src="./js/axios.min.js"></script>
+<script src="./js/common.js"></script>
+<script>
+const app = new Vue({
+    el: "#app",
+    data: {
+        chatList: [],
+        currentChatId: '',
+        messages: [],
+        input: '',
+        loading: false
+    },
+    created() {
+        // 有历史对话则沿用最近一次，否则新建对话
+        var self = this;
+        axios.get("/ai/chat/history")
+            .then(({data}) => {
+                self.chatList = data || [];
+                if (self.chatList.length > 0) {
+                    self.currentChatId = self.chatList[self.chatList.length - 1];
+                    self.loadMessages();
+                } else {
+                    self.newChat();
+                }
+            })
+            .catch(() => { self.newChat(); });
+    },
+    methods: {
+        goBack() { history.back(); },
+        loadChatList() {
+            axios.get("/ai/chat/history")
+                .then(({data}) => { this.chatList = data || []; })
+                .catch(() => {});
+        },
+        loadMessages() {
+            if (!this.currentChatId) return;
+            axios.get("/ai/chat/" + this.currentChatId + "/messages")
+                .then(({data}) => {
+                    this.messages = (data || []).map(m => ({
+                        role: (m.role || '').toLowerCase().includes('user') ? 'user' : 'assistant',
+                        content: (m.content || '').trim()
+                    }));
+                    this.scrollEnd();
+                })
+                .catch(() => { this.messages = []; });
+        },
+        newChat() {
+            axios.post("/ai/chat/new")
+                .then(({data}) => {
+                    this.currentChatId = data;
+                    this.messages = [];
+                    this.loadChatList();
+                })
+                .catch(() => {});
+        },
+        delChat() {
+            if (!confirm("确定删除该会话？")) return;
+            var id = this.currentChatId;
+            axios.delete("/ai/chat/" + id)
+                .then(() => {
+                    this.currentChatId = '';
+                    this.messages = [];
+                    this.loadChatList();
+                })
+                .catch(() => {});
+        },
+        send() {
+            var msg = this.input.trim();
+            if (!msg || this.loading || !this.currentChatId) return;
+            this.loading = true;
+            this.messages.push({ role: 'user', content: msg });
+            this.input = '';
+            this.$nextTick(() => this.scrollEnd());
+
+            var self = this;
+            fetch('/api/ai/chat/' + this.currentChatId + '/send?prompt=' + encodeURIComponent(msg), {
+                method: 'POST',
+                headers: { 'Authorization': sessionStorage.getItem('token') || '' }
+            })
+            .then(r => {
+                if (!r.ok) throw new Error('请求失败');
+                var reader = r.body.getReader();
+                var decoder = new TextDecoder();
+                var aiText = '';
+                self.messages.push({ role: 'assistant', content: '' });
+                var idx = self.messages.length - 1;
+                function read() {
+                    reader.read().then(chunk => {
+                        if (chunk.done) {
+                            self.loading = false;
+                            if (!aiText) self.messages[idx].content = '（无响应）';
+                            self.$nextTick(() => self.scrollEnd());
+                            return;
+                        }
+                        var text = decoder.decode(chunk.value, { stream: true });
+                        var lines = text.split('\n');
+                        lines.forEach(line => {
+                            line = line.trim();
+                            if (line.startsWith('data:')) {
+                                var d = line.substring(5).trim();
+                                if (d && d !== '[DONE]') aiText += d;
+                            }
+                        });
+                        self.messages[idx].content = aiText;
+                        self.$nextTick(() => self.scrollEnd());
+                        read();
+                    }).catch(() => {
+                        // SSE 流异常结束，保留已收到的内容（含超时/错误提示）
+                        if (!aiText) self.messages[idx].content = 'AI 服务异常，请稍后重试';
+                        self.loading = false;
+                    });
+                }
+                read();
+            })
+            .catch((err) => {
+                var msg = '网络异常，请重试';
+                if (err && err.message) msg = err.message;
+                self.messages.push({ role: 'assistant', content: msg });
+                self.loading = false;
+            });
+        },
+        scrollEnd() {
+            var el = this.$refs.msgBox;
+            if (el) {
+                this.$nextTick(() => { el.scrollTop = el.scrollHeight; });
+            }
+        },
+        // 简易 Markdown 渲染，支持表格、加粗、列表、分隔线
+        renderMarkdown(text) {
+            if (!text) return '';
+            text = text.trim(); // 去除首尾空行
+            // 先转义 HTML 特殊字符，防止 AI 回复中的 < > & 等被浏览器当作标签解析
+            var escaped = this.escapeHtml(text);
+            var lines = escaped.split('\n');
+            var result = [];
+            var self = this;
+
+            // 第一遍：找出所有表格区域（连续含 | 的行，且其中包含分隔行）
+            var tableRegions = {};
+            var regionStart = -1;
+            for (var i = 0; i < lines.length; i++) {
+                var t = lines[i].trim();
+                if (t.indexOf('|') >= 0) {
+                    if (regionStart < 0) regionStart = i;
+                } else {
+                    if (regionStart >= 0) {
+                        if (i - regionStart >= 2 && self.hasTableSeparator(lines, regionStart, i - 1)) {
+                            for (var j = regionStart; j < i; j++) { tableRegions[j] = true; }
+                        }
+                        regionStart = -1;
+                    }
+                }
+            }
+            if (regionStart >= 0 && lines.length - regionStart >= 2 && self.hasTableSeparator(lines, regionStart, lines.length - 1)) {
+                for (var j = regionStart; j < lines.length; j++) { tableRegions[j] = true; }
+            }
+
+            // 第二遍：按行渲染
+            var inTable = false;
+            var tableLines = [];
+            function flushTable() {
+                if (inTable && tableLines.length > 0) {
+                    result.push(self.renderTable(tableLines));
+                }
+                inTable = false;
+                tableLines = [];
+            }
+
+            for (var i = 0; i < lines.length; i++) {
+                var trimmed = lines[i].trim();
+
+                if (tableRegions[i]) {
+                    if (!inTable) { inTable = true; tableLines = []; }
+                    tableLines.push(trimmed);
+                } else {
+                    flushTable();
+                    if (trimmed === '') {
+                        continue;
+                    } else if (trimmed.startsWith('---') && trimmed.length >= 3) {
+                        result.push('<hr>');
+                    } else if (trimmed.startsWith('***') && trimmed.length >= 3) {
+                        result.push('<hr>');
+                    } else if (/^[\*\-\+]\s/.test(trimmed)) {
+                        var item = trimmed.replace(/^[\*\-\+]\s/, '').replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+                        result.push('<li>' + item + '</li>');
+                    } else if (/^\d+[\.\、]\s/.test(trimmed)) {
+                        var oitem = trimmed.replace(/^\d+[\.\、]\s/, '').replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+                        result.push('<li>' + oitem + '</li>');
+                    } else {
+                        var html = trimmed.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+                        result.push('<p>' + html + '</p>');
+                    }
+                }
+            }
+            flushTable();
+
+            // 包裹连续的 <li> 到 <ul> 中
+            var wrapped = [];
+            var listItems = [];
+            function flushList() {
+                if (listItems.length > 0) {
+                    wrapped.push('<ul>' + listItems.join('') + '</ul>');
+                    listItems = [];
+                }
+            }
+            for (var j = 0; j < result.length; j++) {
+                if (result[j].startsWith('<li>')) {
+                    listItems.push(result[j]);
+                } else {
+                    flushList();
+                    wrapped.push(result[j]);
+                }
+            }
+            flushList();
+
+            return wrapped.join('');
+        },
+        // 检查行范围 [start, end] 内是否包含表格分隔行
+        hasTableSeparator(lines, start, end) {
+            for (var i = start; i <= end; i++) {
+                if (this.isTableSeparator(lines[i].trim())) return true;
+            }
+            return false;
+        },
+        // HTML 转义：防止 AI 回复中的特殊字符被浏览器当作标签解析
+        escapeHtml(text) {
+            return text
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        },
+        // 渲染 Markdown 表格为 HTML 表格
+        renderTable(lines) {
+            if (lines.length === 0) return '';
+            var html = '<table><thead><tr>';
+            // 解析表头（第一行）
+            var headers = this.splitTableRow(lines[0]);
+            for (var h = 0; h < headers.length; h++) {
+                html += '<th>' + this.boldToHtml(headers[h]) + '</th>';
+            }
+            html += '</tr></thead><tbody>';
+            // 判断分隔行位置
+            var startIdx = 1;
+            if (lines.length > 1 && this.isTableSeparator(lines[1])) {
+                startIdx = 2; // 第二行是分隔行，跳过
+            }
+            // 如果第一行是分隔行，则第二行为表头，第三行为数据
+            if (this.isTableSeparator(lines[0]) && lines.length > 1) {
+                html = '<table><thead><tr>';
+                var h2 = this.splitTableRow(lines[1]);
+                for (var j = 0; j < h2.length; j++) {
+                    html += '<th>' + this.boldToHtml(h2[j]) + '</th>';
+                }
+                html += '</tr></thead><tbody>';
+                startIdx = 2;
+                if (lines.length > 2 && this.isTableSeparator(lines[2])) startIdx = 3;
+            }
+            // 解析数据行
+            for (var i = startIdx; i < lines.length; i++) {
+                if (this.isTableSeparator(lines[i])) continue; // 跳过额外的分隔行
+                html += '<tr>';
+                var cells = this.splitTableRow(lines[i]);
+                for (var c = 0; c < cells.length; c++) {
+                    html += '<td>' + this.boldToHtml(cells[c]) + '</td>';
+                }
+                html += '</tr>';
+            }
+            html += '</tbody></table>';
+            return html;
+        },
+        // 加粗转 HTML（在已转义的文本上处理）
+        boldToHtml(text) {
+            return text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+        },
+        // 分割表格行，去除首尾 |
+        splitTableRow(line) {
+            var trimmed = line.trim();
+            if (trimmed.startsWith('|')) trimmed = trimmed.substring(1);
+            if (trimmed.endsWith('|')) trimmed = trimmed.substring(0, trimmed.length - 1);
+            return trimmed.split('|').map(function(c) { return c.trim(); });
+        },
+        // 判断是否是表格分隔行（如 |---|---| 或 ----|----|----）
+        isTableSeparator(line) {
+            var t = line.trim();
+            if (t.indexOf('|') < 0) return false; // 不含 | 不可能是表格分隔行
+            // 去除首尾 |
+            if (t.startsWith('|')) t = t.substring(1);
+            if (t.endsWith('|')) t = t.substring(0, t.length - 1);
+            var cells = t.split('|');
+            if (cells.length === 0) return false;
+            for (var i = 0; i < cells.length; i++) {
+                var c = cells[i].trim();
+                if (c.length === 0) return false;       // 空单元格不是分隔符
+                if (!/^[\-:]+$/.test(c)) return false;  // 必须全由 - 和 : 组成
+            }
+            return true;
+        }
+    }
+});
+</script>
+</body>
+</html>

@@ -9,7 +9,9 @@ import com.llsp.dto.LoginFormDTO;
 import com.llsp.dto.Result;
 import com.llsp.dto.UserDTO;
 import com.llsp.entity.User;
+import com.llsp.entity.UserInfo;
 import com.llsp.mapper.UserMapper;
+import com.llsp.service.IUserInfoService;
 import com.llsp.service.IUserService;
 import com.llsp.utils.RegexUtils;
 import com.llsp.utils.UserHolder;
@@ -19,6 +21,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import jakarta.annotation.Resource;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 
 import java.time.LocalDateTime;
@@ -36,9 +39,13 @@ import static com.llsp.utils.SystemConstants.USER_NICK_NAME_PREFIX;
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IUserService {
     @Resource
     private StringRedisTemplate stringRedisTemplate;
+    @Resource
+    private IUserInfoService userInfoService;
+    @Resource
+    private PasswordEncoder passwordEncoder;
 
     /**
-     * 发送手机验证码
+     * 发送短信验证码（未配置短信则日志打印）
      * @param phone 手机号
      * @return Result
      */
@@ -59,9 +66,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         String code = RandomUtil.randomNumbers(6);
         // 保存验证码到redis
         stringRedisTemplate.opsForValue().set(LOGIN_CODE_KEY + phone, code, LOGIN_CODE_TTL, TimeUnit.MINUTES);
-        // 发送验证码
-        log.info("发送验证码成功！验证码为：{}", code);
-        return Result.ok();
+        // 返回验证码给前端
+        return Result.ok(code);
     }
 
     /**
@@ -75,17 +81,43 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         if (RegexUtils.isPhoneInvalid(phone)){
             return Result.fail("手机号格式错误！");
         }
-        // 校验验证码
         String code = loginForm.getCode();
-        String cacheCode = stringRedisTemplate.opsForValue().get(LOGIN_CODE_KEY + phone);
-        if (!code.equals(cacheCode)) {
-            return Result.fail("验证码错误！");
-        }
-        User user = query().eq("phone", phone).one();
-        // 判断用户是否存在
-        if (user == null) {
-            // 不存在，创建用户
-            user = createUserWithPhone(phone);
+        String password = loginForm.getPassword();
+
+        User user;
+        // 判断登录方式：验证码 or 密码
+        if (code != null && !code.isEmpty()) {
+            // ========== 验证码登录 ==========
+            String cacheCode = stringRedisTemplate.opsForValue().get(LOGIN_CODE_KEY + phone);
+            if (cacheCode == null || !code.equals(cacheCode)) {
+                return Result.fail("验证码错误！");
+            }
+            user = query().eq("phone", phone).one();
+            if (user == null) {
+                // 新用户，自动注册
+                user = createUserWithPhone(phone);
+            }
+        } else if (password != null && !password.isEmpty()) {
+            // ========== 密码登录 ==========
+            user = query().eq("phone", phone).one();
+            if (user == null) {
+                return Result.fail("用户不存在，请先使用验证码登录！");
+            }
+            if (user.getPassword() == null) {
+                return Result.fail("该账号未设置密码，请使用验证码登录！");
+            }
+            if (!passwordEncoder.matches(password, user.getPassword())) {
+                // BCrypt 不匹配，尝试明文匹配（兼容旧数据）
+                if (!password.equals(user.getPassword())) {
+                    return Result.fail("密码错误！");
+                }
+                // 明文匹配成功，自动升级为 BCrypt 哈希
+                user.setPassword(passwordEncoder.encode(password));
+                updateById(user);
+                log.info("用户 {} 密码已从明文自动升级为BCrypt", phone);
+            }
+        } else {
+            return Result.fail("请输入验证码或密码！");
         }
         // 生成token
         String token = UUID.randomUUID().toString(true);
@@ -177,6 +209,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         user.setNickName(USER_NICK_NAME_PREFIX+RandomUtil.randomString(10));
         //保存用户
         save(user);
+        // 同步创建 tb_user_info 记录，避免后续查询返回空导致前端硬编码兜底
+        UserInfo info = new UserInfo();
+        info.setUserId(user.getId());
+        userInfoService.save(info);
         return user;
     }
 
