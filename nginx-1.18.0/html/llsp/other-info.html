@@ -134,6 +134,10 @@
       commentInput: '',
     },
     created() {
+      if (!sessionStorage.getItem("token")) {
+        location.href = "/login2.html?redirect=" + encodeURIComponent(location.href);
+        return;
+      }
       this.queryUser();
       this.queryLoginUser();
     },
@@ -185,6 +189,7 @@
           .catch(() => {})
       },
       follow() {
+        if (!requireLogin()) return;
         axios.put("/follow/" + this.user.id + "/" + !this.followed)
           .then(() => {
             this.$message.success(this.followed ? "已取消关注" : "已关注");
@@ -196,6 +201,7 @@
         this.activeName = name;
       },
       addLike(b) {
+        if (!requireLogin()) return;
         axios.put("/blog/like/" + b.id)
           .then(() => {
             axios.get("/blog/" + b.id).then(({data}) => {
@@ -211,6 +217,7 @@
         this.commentDialogVisible = true;
       },
       submitComment() {
+        if (!requireLogin()) return;
         if (!this.commentInput.trim()) {
           this.$message.warning("请输入评价内容");
           return;

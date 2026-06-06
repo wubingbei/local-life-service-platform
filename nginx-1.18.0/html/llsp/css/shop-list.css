@@ -134,15 +134,11 @@ body {
         font-size: 14px;
     }
     .shop-list {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 12px;
         padding: 12px;
-        align-content: start;
+        overflow-y: auto;
     }
     .shop-box {
-        width: auto;
-        margin-bottom: 0;
+        margin-bottom: 8px;
         border-radius: 8px;
     }
     .shop-img img {

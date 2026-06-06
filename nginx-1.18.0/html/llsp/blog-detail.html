@@ -29,10 +29,23 @@
     <div class="blog-info-box" ref="swiper"
          @touchstart="moveStart"
          @touchmove="moving"
-         @touchend="moveEnd">
+         @touchend="moveEnd"
+         @mousedown="dragStart"
+         @mousemove="dragging"
+         @mouseup="dragEnd"
+         @mouseleave="dragEnd">
       <div class="swiper-item" v-for="(img, i) in blog.images" :key="i">
         <img :src="img" alt="" style="width: 100%" height="100%">
       </div>
+      <!-- 左右点击区域（桌面端） -->
+      <div class="swiper-nav-left" @click.stop="prev" v-show="blog.images.length > 1"></div>
+      <div class="swiper-nav-right" @click.stop="next" v-show="blog.images.length > 1"></div>
+    </div>
+    <!-- 图片指示器圆点 -->
+    <div class="swiper-dots" v-if="blog.images && blog.images.length > 1">
+      <span v-for="(img, i) in blog.images" :key="i"
+            class="swiper-dot" :class="{active: active === i}"
+            @click="go(i)"></span>
     </div>
     <div class="basic">
       <div class="basic-icon" @click="toOtherInfo">
@@ -162,9 +175,14 @@
         y: 0
       },
       sensitivity: 60,
-      resistance: 0.3
+      resistance: 0.3,
+      isDragging: false
     },
     created() {
+      if (!sessionStorage.getItem("token")) {
+        location.href = "/login2.html?redirect=" + encodeURIComponent(location.href);
+        return;
+      }
       let id = util.getUrlParam("id");
       this.queryBlogById(id);
       this.queryLoginUser();
@@ -234,6 +252,7 @@
           .catch(() => {})
       },
       addComment(){
+        if (!requireLogin()) return;
         var self = this;
         if (self.sending) return;  // 防止重复提交
         var content = self.commentText.trim();
@@ -329,6 +348,7 @@
         this.$refs.commentsSection.scrollIntoView({ behavior: 'smooth' });
       },
       addLike(){
+        if (!requireLogin()) return;
         axios.put("/blog/like/" +this.blog.id)
           .then(({data}) => {
             axios.get("/blog/" + this.blog.id)
@@ -349,6 +369,7 @@
           .catch(this.$message.error)
       },
       follow(){
+        if (!requireLogin()) return;
         axios.put("/follow/" + this.blog.userId + "/" + !this.followed)
           .then(() => {
             this.$message.success(this.followed ? "已取消关注" : "已关注")
@@ -425,6 +446,45 @@
           e.preventDefault()
           e.stopPropagation()
           let distance = this.move.x - this.start.x
+          if (Math.abs(distance) > this.sensitivity) {
+            if (distance < 0) {
+              this.next()
+            } else {
+              this.prev()
+            }
+          } else {
+            this.back()
+          }
+          this.reset()
+          this.isMoving = false
+        }
+      },
+      // 鼠标拖拽（桌面端）
+      dragStart(e) {
+        e.preventDefault()
+        this.isDragging = true
+        this.start.x = e.pageX
+        this.start.y = e.pageY
+        this.setTransition('none')
+      },
+      dragging(e) {
+        if (!this.isDragging) return
+        e.preventDefault()
+        let distanceX = e.pageX - this.start.x
+        let distanceY = e.pageY - this.start.y
+        if (Math.abs(distanceX) > Math.abs(distanceY)) {
+          this.isMoving = true
+          if ((this.active === 0 && distanceX > 0) || (this.active === (this.items.length - 1) && distanceX < 0)) {
+            distanceX = distanceX * this.resistance
+          }
+          this.setTransform(distanceX)
+        }
+      },
+      dragEnd(e) {
+        if (!this.isDragging) return
+        this.isDragging = false
+        if (this.isMoving) {
+          let distance = e.pageX - this.start.x
           if (Math.abs(distance) > this.sensitivity) {
             if (distance < 0) {
               this.next()

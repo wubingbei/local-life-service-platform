@@ -278,6 +278,7 @@
     display: flex;
     justify-content: space-between;
     margin-bottom: 15px;
+    cursor: pointer;
 }
 .comment-icon {
     width: 55px;

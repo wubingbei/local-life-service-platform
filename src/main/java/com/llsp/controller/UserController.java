@@ -119,14 +119,29 @@ public class UserController {
         }
         if (updateUser) userService.updateById(user);
         // 更新 tb_user_info 表
+        boolean updateInfo = false;
         UserInfo info = new UserInfo();
         info.setUserId(userId);
-        if (params.containsKey("city")) info.setCity((String) params.get("city"));
-        if (params.containsKey("introduce")) info.setIntroduce((String) params.get("introduce"));
-        if (params.containsKey("gender")) info.setGender((Boolean) params.get("gender"));
-        if (params.containsKey("birthday")) info.setBirthday(java.time.LocalDate.parse((String) params.get("birthday")));
-        // 使用 saveOrUpdate 自动处理插入或更新，避免并发冲突
-        userInfoService.saveOrUpdate(info);
+        if (params.containsKey("city")) {
+            info.setCity((String) params.get("city"));
+            updateInfo = true;
+        }
+        if (params.containsKey("introduce")) {
+            info.setIntroduce((String) params.get("introduce"));
+            updateInfo = true;
+        }
+        if (params.containsKey("gender")) {
+            info.setGender((Boolean) params.get("gender"));
+            updateInfo = true;
+        }
+        if (params.containsKey("birthday")) {
+            info.setBirthday(java.time.LocalDate.parse((String) params.get("birthday")));
+            updateInfo = true;
+        }
+        // 只有当有字段需要更新时才执行 saveOrUpdate
+        if (updateInfo) {
+            userInfoService.saveOrUpdate(info);
+        }
         return Result.ok();
     }
 

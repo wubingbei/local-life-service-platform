@@ -33,6 +33,9 @@
         </el-input>
         <div style="text-align: center; color: #8c939d;margin: 5px 0">未注册的手机号码验证后自动创建账户</div>
         <el-button @click="login" style="width: 100%; background-color:#FF2442; color: #fff;">登录</el-button>
+        <div style="text-align: center; margin-top: 15px;">
+          <a href="/index.html" style="color: #999; font-size: 13px;">先逛逛，暂不登录</a>
+        </div>
         <div style="text-align: right; color:#333333; margin: 5px 0"><a href="/login2.html">密码登录</a></div>
       </div>
       <div class="login-radio">
@@ -91,13 +94,14 @@
               // 保存用户信息到session
               sessionStorage.setItem("token", data);
             }
-            // 跳转到首页
-            location.href = "/index.html"
+            // 跳转回原页面，没有则跳首页
+            var redirect = util.getUrlParam("redirect");
+            location.href = redirect || "/index.html";
         })
         .catch(err => this.$message.error(err))
       },
       goBack(){
-        history.back();
+        location.href = "/index.html";
       },
       sendCode(){
         if (!this.form.phone) {

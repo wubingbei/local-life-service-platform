@@ -34,11 +34,14 @@
         <el-input placeholder="请输入密码" v-model="form.password">
         </el-input>
         <el-button @click="login" style="width: 100%; background-color:#FF2442; color: #fff;">登录</el-button>
+        <div style="text-align: center; margin-top: 15px;">
+          <a href="/index.html" style="color: #999; font-size: 13px;">先逛逛，暂不登录</a>
+        </div>
         <div style="text-align: right; color:#333333; margin: 5px 0"><a href="/login.html">验证码登录</a></div>
       </div>
       <div class="login-radio">
         <div>
-          <input type="radio" name="readed" v-model="radio" value="1">
+          <input type="radio" id="readed" name="readed" v-model="radio" value="1">
           <label for="readed"></label>
         </div>
         <div>我已阅读并同意
@@ -89,13 +92,14 @@
               // 保存用户信息到session
               sessionStorage.setItem("token", data);
             }
-            // 跳转到首页
-            location.href = "/index.html"
+            // 跳转回原页面，没有则跳首页
+            var redirect = util.getUrlParam("redirect");
+            location.href = redirect || "/index.html";
           })
           .catch(err => this.$message.error(err))
       },
       goBack(){
-        history.back();
+        location.href = "/index.html";
       }
     }
   })

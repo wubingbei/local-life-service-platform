@@ -2,8 +2,8 @@ package com.llsp.utils;
 
 public class SystemConstants {
     public static final String USER_NICK_NAME_PREFIX = "user_";
-    public static final int DEFAULT_PAGE_SIZE = 10;
-    public static final int MAX_PAGE_SIZE = 10;
+    public static final int DEFAULT_PAGE_SIZE = 20;
+    public static final int MAX_PAGE_SIZE = 20;
 
     public static final String SERVICE_SYSTEM_PROMPT = """
     【系统角色与身份】

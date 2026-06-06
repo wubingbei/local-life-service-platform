@@ -71,8 +71,11 @@
           <span>{{s.address}}</span>
         </div>
       </div>
-      <div v-if="noMore && shops.length > 0" style="text-align:center;color:#ccc;padding:16px;font-size:13px;">— 没有更多了 —</div>
     </div>
+    <div v-if="!noMore && shops.length > 0" style="text-align:center;padding:16px;">
+      <el-button type="danger" plain round size="small" @click="loadMore" :loading="loadingMore">加载更多</el-button>
+    </div>
+    <div v-if="noMore && shops.length > 0" style="text-align:center;color:#ccc;padding:16px;font-size:13px;">— 没有更多了 —</div>
   </div>
 </div>
 <script src="./js/vue.js"></script>
@@ -86,6 +89,7 @@
     el: "#app",
     data: {
       util,
+      loadingMore: false,
       isReachBottom: false,
       noMore: false, // 是否没有更多数据
       isSearchMode: false, // 是否搜索模式
@@ -102,6 +106,10 @@
       }
     },
     created() {
+      if (!sessionStorage.getItem("token")) {
+        location.href = "/login2.html?redirect=" + encodeURIComponent(location.href);
+        return;
+      }
       // 获取参数
       this.params.typeId = util.getUrlParam("type");
       this.params.keyword = util.getUrlParam("name");  // 搜索关键词
@@ -204,6 +212,36 @@
           }
         }else{
           this.isReachBottom = false
+        }
+      },
+      loadMore() {
+        if (this.loadingMore || this.noMore) return;
+        this.loadingMore = true;
+        this.isReachBottom = true;
+        this.params.current++;
+        var self = this;
+        var done = function() {
+          self.loadingMore = false;
+          self.isReachBottom = false;
+        };
+        if (this.isSearchMode) {
+          axios.get("/shop/of/name", { params: { name: this.params.keyword, current: this.params.current } })
+            .then(({data}) => {
+              if (!data || data.length === 0) { this.noMore = true; done(); return; }
+              data.forEach(s => s.images = s.images.split(',')[0]);
+              self.shops = self.shops.concat(data);
+              done();
+            })
+            .catch(err => { this.$message.error(err); done(); });
+        } else {
+          axios.get("/shop/of/type", { params: this.params })
+            .then(({data}) => {
+              if (!data || data.length === 0) { this.noMore = true; done(); return; }
+              data.forEach(s => s.images = s.images.split(',')[0]);
+              self.shops = self.shops.concat(data);
+              done();
+            })
+            .catch(err => { this.$message.error(err); done(); });
         }
       },
     }

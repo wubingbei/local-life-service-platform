@@ -48,6 +48,12 @@
     height: 0;
     padding-bottom: 100%;
     background: #000;
+    cursor: grab;
+    user-select: none;
+    -webkit-user-select: none;
+}
+.blog-info-box:active {
+    cursor: grabbing;
 }
 .swiper-item {
     position: absolute;
@@ -60,6 +66,40 @@
     width: 100%;
     height: 100%;
     object-fit: contain;
+}
+
+/* 左右导航区域 */
+.swiper-nav-left, .swiper-nav-right {
+    position: absolute;
+    top: 0;
+    width: 33%;
+    height: 100%;
+    z-index: 2;
+    cursor: pointer;
+}
+.swiper-nav-left { left: 0; }
+.swiper-nav-right { right: 0; }
+
+/* 图片指示器圆点 */
+.swiper-dots {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 0;
+    background: #fff;
+}
+.swiper-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #ddd;
+    cursor: pointer;
+    transition: background 0.2s, width 0.2s;
+}
+.swiper-dot.active {
+    background: #FF2442;
+    width: 18px;
+    border-radius: 3px;
 }
 
 /* 作者信息 */

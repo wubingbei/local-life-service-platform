@@ -24,7 +24,7 @@ setTimeout(function() {
 }, 100);
 // 设置后台服务地址
 axios.defaults.baseURL = commonURL;
-axios.defaults.timeout = 2000;
+axios.defaults.timeout = 5000;
 // request拦截器，将用户token放入头中
 axios.interceptors.request.use(
   config => {
@@ -46,11 +46,8 @@ axios.interceptors.response.use(function (response) {
 }, function (error) {
   // 一般是服务端异常或者网络异常
   console.log(error)
-  if(error.response.status == 401){
-    // 未登录，跳转
-    setTimeout(() => {
-      location.href = "/login.html"
-    }, 200);
+  if(error.response && error.response.status == 401){
+    // 未登录，返回提示信息（不自动跳转，允许游客浏览内容）
     return Promise.reject("请先登录");
   }
   return Promise.reject("服务器异常");
@@ -63,6 +60,16 @@ axios.defaults.paramsSerializer = function(params) {
     }
   })
   return p;
+}
+// 检查登录状态，未登录则提示并跳转登录页
+function requireLogin() {
+  if (!sessionStorage.getItem("token")) {
+    if (confirm('请先登录后再操作')) {
+      location.href = '/login2.html?redirect=' + encodeURIComponent(location.href);
+    }
+    return false;
+  }
+  return true;
 }
 const util = {
   commonURL,

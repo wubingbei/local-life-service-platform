@@ -27,7 +27,7 @@
   <!-- 搜索栏 -->
   <div class="search-bar">
     <div class="search-input">
-      <el-input size="mini" placeholder="搜索笔记、商户" v-model="keyword" @keyup.enter.native="search" clearable>
+      <el-input size="mini" placeholder="搜索商户" v-model="keyword" @keyup.enter.native="search" clearable>
         <i slot="prefix" class="el-input__icon el-icon-search"></i>
       </el-input>
     </div>
@@ -59,8 +59,8 @@
     <!-- 瀑布流 -->
     <div class="waterfall" :class="'cols-' + columnCount">
       <div class="waterfall-col" v-for="(col, ci) in followColumns" :key="'fc'+ci">
-        <div class="blog-box" v-for="b in col" :key="b.id">
-          <div class="blog-img" @click="toBlogDetail(b)"><img :src="b.img" alt=""></div>
+        <div class="blog-box" v-for="b in col" :key="b.id" @click="toBlogDetail(b)" style="cursor:pointer">
+          <div class="blog-img"><img :src="b.img" alt=""></div>
           <div class="blog-title">{{b.title}}</div>
           <div class="blog-foot">
             <div class="blog-user-icon"><img :src="b.icon || '/imgs/icons/default-icon.png'" alt=""></div>
@@ -90,8 +90,8 @@
     </div>
     <div class="waterfall" :class="'cols-' + columnCount">
       <div class="waterfall-col" v-for="(col, ci) in discoverColumns" :key="'dc'+ci">
-        <div class="blog-box" v-for="b in col" :key="b.id">
-          <div class="blog-img" @click="toBlogDetail(b)"><img :src="b.img" alt=""></div>
+        <div class="blog-box" v-for="b in col" :key="b.id" @click="toBlogDetail(b)" style="cursor:pointer">
+          <div class="blog-img"><img :src="b.img" alt=""></div>
           <div class="blog-title">{{b.title}}</div>
           <div class="blog-foot">
             <div class="blog-user-icon"><img :src="b.icon || '/imgs/icons/default-icon.png'" alt=""></div>
@@ -238,6 +238,7 @@
       },
       // ========== 通用 ==========
       addLike(b, source) {
+        if (!requireLogin()) return;
         axios.put("/blog/like/" + b.id)
           .then(() => {
             axios.get("/blog/" + b.id).then(({data}) => {

@@ -95,7 +95,7 @@
           <div class="empty-title">还没有发布评价</div>
           <div class="empty-desc">去逛逛笔记，留下你的精彩评论吧</div>
         </div>
-        <div v-for="c in myComments" :key="c.id" class="comment-item">
+        <div v-for="c in myComments" :key="c.id" class="comment-item" @click="goToBlog(c.blogId)">
           <div class="comment-content">{{c.content}}</div>
           <div class="comment-blog" v-if="c.blogTitle">相关笔记：{{c.blogTitle}}</div>
           <div class="comment-foot">
@@ -242,6 +242,9 @@
         },
         toBlogDetail(b) {
           location.href = '/blog-detail.html?id=' + b.id
+        },
+        goToBlog(blogId) {
+          if (blogId) location.href = '/blog-detail.html?id=' + blogId
         },
         toOtherInfo(uid) {
           location.href = '/other-info.html?id=' + uid

@@ -100,7 +100,7 @@
     </div>
     <!-- 评价列表 -->
     <div class="comment-list" v-if="comments.length > 0">
-      <div class="comment-box" v-for="c in comments" :key="c.id">
+      <div class="comment-box" v-for="c in comments" :key="c.id" @click="goToUser(c.userId)">
         <div class="comment-icon">
           <img :src="c.userIcon || '/imgs/icons/default-icon.png'" alt="">
         </div>
@@ -135,6 +135,10 @@
       purchasedIds: []  // 用户已购买的优惠券ID
     },
     created() {
+      if (!sessionStorage.getItem("token")) {
+        location.href = "/login2.html?redirect=" + encodeURIComponent(location.href);
+        return;
+      }
       // 获取参数
       let shopId = util.getUrlParam("id");
       // 查询酒店信息
@@ -230,6 +234,7 @@
         return this.purchasedIds.indexOf(v.id) !== -1;
       },
       addComment() {
+        if (!requireLogin()) return;
         var self = this;
         if (self.sending) return;  // 防止重复提交
         var content = self.commentText.trim();
@@ -289,6 +294,14 @@
       canDelete(c) {
         return this.user && this.user.id === c.userId;
       },
+      goToUser(userId) {
+        if (!userId) return;
+        if (this.user && this.user.id === userId) {
+          location.href = '/info.html';
+        } else {
+          location.href = '/other-info.html?id=' + userId;
+        }
+      },
       deleteComment(id) {
         var self = this;
         self.$confirm('确定要删除这条评论吗？', '提示', {
@@ -326,14 +339,8 @@
       },
 
       seckill(v){
+        if (!requireLogin()) return;
         var self = this;
-        if(!token){
-          self.$message({ message: "请先登录", type: "error", center: true });
-          setTimeout(function() {
-            location.href = "/login.html";
-          }, 800);
-          return;
-        }
         if(self.isNotBegin(v)){
           self.$message({ message: "优惠券抢购尚未开始！", type: "error", center: true });
           return;

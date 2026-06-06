@@ -8,7 +8,17 @@
   <link href="./css/main.css?v=20260603" rel="stylesheet">
   <style type="text/css">
     body { background: #f5f5f5; }
-    #app { padding-bottom: 60px; min-height: 100vh; }
+    #app { height: 100vh; display: flex; flex-direction: column; overflow: hidden; padding-bottom: 0; }
+    .header {
+      width: 100%; height: 44px; display: flex; align-items: center;
+      justify-content: space-between; border-bottom: 2px solid #FF2442;
+      flex-shrink: 0; background: #fff;
+    }
+    .header-back-btn { width: 10%; color: #FF2442; font-size: 24px; font-weight: bold; text-align: center; }
+    .header-title { width: 80%; text-align: center; font-size: 18px;
+      font-family: -apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Helvetica Neue",Helvetica,Arial,sans-serif; }
+    .header-placeholder { width: 10%; }
+    .voucher-scroll { flex: 1; overflow-y: auto; padding-bottom: 10px; }
     .voucher-card {
       background: #fff; border-radius: 12px; margin: 12px 16px;
       padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);
@@ -54,6 +64,7 @@
     <div class="header-placeholder"></div>
   </div>
 
+  <div class="voucher-scroll">
   <div v-if="loading" style="text-align:center;padding:40px;color:#999;">加载中...</div>
 
   <div v-else-if="vouchers.length === 0" class="empty-page">
@@ -81,6 +92,7 @@
       <div class="voucher-time">抢购时间：{{v.createTime || '-'}}</div>
     </div>
   </div>
+  </div><!-- /voucher-scroll -->
 
   <foot-bar :active-btn="4"></foot-bar>
 </div>
