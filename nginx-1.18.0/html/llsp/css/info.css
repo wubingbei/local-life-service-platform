@@ -93,7 +93,13 @@
     padding: 0 10px;
     border-radius: 3px;
     background-color: #FF2442;
+    border: 1px solid #FF2442;
     box-shadow: 0 1px 2px 1px rgba(0, 0, 0, 0.04);
+    transition: all 0.2s;
+}
+.logout-btn.followed {
+    background: #fff;
+    color: #FF2442;
 }
 
 .introduce{
@@ -206,6 +212,7 @@
     box-shadow: 1px 1px 4px 1px rgba(0,0,0,0.1);
     margin-bottom: 10px;
     cursor: pointer;
+    overflow: hidden;
 }
 .blog-img {
     width: 70px;

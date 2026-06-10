@@ -47,22 +47,6 @@
       </div>
     </div>
     <div class="info-box">
-      <div class="info-item" @click="editPhone">
-        <div class="info-label">手机号</div>
-        <div class="info-btn">
-          <div>{{user.phone || '绑定手机号'}}</div>
-          <div><i class="el-icon-arrow-right"></i></div>
-        </div>
-      </div>
-      <div class="divider"></div>
-      <div class="info-item" @click="editPassword">
-        <div class="info-label">密码</div>
-        <div class="info-btn">
-          <div>{{user.password ? '已设置' : '设置密码'}}</div>
-          <div><i class="el-icon-arrow-right"></i></div>
-        </div>
-      </div>
-      <div class="divider"></div>
       <div class="info-item" @click="editGender">
         <div class="info-label">性别</div>
         <div class="info-btn">
@@ -125,14 +109,14 @@
     methods: {
       checkLogin() {
         var self = this;
-        axios.get("/user/me")
+        axios.get("user/me")
         .then(function(res) {
           self.user = res.data;
           // 优先使用 sessionStorage 缓存，同时从后端加载确保数据最新
           var cached = sessionStorage.getItem("userInfo");
           self.info = cached ? JSON.parse(cached) : {};
           // 从后端API加载 UserInfo（确保数据完整）
-          axios.get("/user/info/" + self.user.id).then(function(r) {
+          axios.get("user/info/" + self.user.id).then(function(r) {
             if (r.data) {
               self.info = r.data;
               sessionStorage.setItem("userInfo", JSON.stringify(r.data));
@@ -146,10 +130,10 @@
       },
       refreshUser() {
         var self = this;
-        axios.get("/user/me").then(function(res) {
+        axios.get("user/me").then(function(res) {
           self.user = res.data;
         }).catch(function() {});
-        axios.get("/user/info/" + this.user.id).then(function(res) {
+        axios.get("user/info/" + this.user.id).then(function(res) {
           if (res.data) {
             self.info = res.data;
             sessionStorage.setItem("userInfo", JSON.stringify(res.data));
@@ -228,42 +212,6 @@
           inputValue: this.info.city || ''
         }).then(({ value }) => {
           this.saveInfo({ city: value || '' });
-        }).catch(() => {});
-      },
-      // 编辑密码
-      editPassword() {
-        var self = this;
-        this.$prompt('请输入新密码', '设置密码', {
-          confirmButtonText: '确定',
-          cancelButtonText: '取消',
-          inputType: 'password',
-          inputPattern: /\S{6,}/,
-          inputErrorMessage: '密码长度至少6位'
-        }).then(({ value }) => {
-          if (value && value.trim()) {
-            axios.put("/user/info", { password: value.trim() })
-              .then(function() {
-                self.$message({ message: "密码设置成功", type: "success", center: true });
-                self.refreshUser();
-              })
-              .catch(function(err) {
-                self.$message({ message: err || "密码设置失败", type: "error", center: true });
-              });
-          }
-        }).catch(() => {});
-      },
-      // 编辑手机号
-      editPhone() {
-        this.$prompt('请输入手机号', '绑定手机号', {
-          confirmButtonText: '确定',
-          cancelButtonText: '取消',
-          inputValue: this.user.phone || '',
-          inputPattern: /^1[3-9]\d{9}$/,
-          inputErrorMessage: '请输入正确的手机号'
-        }).then(({ value }) => {
-          if (value && value.trim()) {
-            this.saveInfo({ phone: value.trim() });
-          }
         }).catch(() => {});
       },
       // 编辑生日（日期选择器）

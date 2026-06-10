@@ -154,6 +154,7 @@
     overflow-y: auto;
     overflow-x: hidden;
     background-color: #fff;
+    padding-bottom: 76px;
 }
 
 /* ===== 瀑布流布局 ===== */

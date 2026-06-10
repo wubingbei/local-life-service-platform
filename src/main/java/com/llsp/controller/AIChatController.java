@@ -1,11 +1,13 @@
 package com.llsp.controller;
 
+import com.llsp.config.MysqlChatMemory;
 import com.llsp.dto.Result;
 import com.llsp.repository.ChatHistoryRepository;
 import com.llsp.utils.UserHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
@@ -47,7 +49,7 @@ public class AIChatController {
      * 发送消息（需要指定会话ID）
      */
     @PostMapping(value = "/chat/{chatId}/send", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<String> chat(@PathVariable String chatId, 
+    public Flux<String> chat(@PathVariable String chatId,
                              @RequestParam String prompt) {
         Long userId = UserHolder.getUser().getId();
         // 1. 先验证会话归属
@@ -57,30 +59,48 @@ public class AIChatController {
             return Flux.just("会话不存在或无权限");
         }
         chatHistoryRepository.save(userId, chatId);
+
+        // 2. 上下文上限检查：达到上限时提示用户新开会话，不再继续
+        int maxMessages = ((MysqlChatMemory) chatMemory).getMaxMessages();
+        int currentCount = chatMemory.get(chatId).size();
+        if (currentCount >= maxMessages) {
+            log.info("用户 {} 的会话 {} 消息数已达上限 {}", userId, chatId, maxMessages);
+            return Flux.just("对话上下文已达上限（" + maxMessages + "条消息），请新建会话继续对话");
+        }
+
         return serviceChatClient.prompt()
                 .user(prompt)
                 .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, chatId))
                 .stream()
                 .content()
-                .timeout(Duration.ofSeconds(5), Flux.defer(() -> {
-                    log.warn("AI 首字响应超时 (5s)，会话ID: {}", chatId);
-                    return Flux.just("AI 响应超时，请稍后重试");
+                .timeout(Duration.ofSeconds(10), Flux.defer(() -> {
+                    log.warn("AI 首字响应超时 (10s)，会话ID: {}", chatId);
+                    String errMsg = "AI 响应超时，请稍后重试";
+                    // 手动持久化错误消息，避免刷新后丢失
+                    chatMemory.add(chatId, List.of(
+                            new AssistantMessage(errMsg)
+                    ));
+                    return Flux.just(errMsg);
                 }))
                 .onErrorResume(e -> {
                     log.error("AI 对话异常，会话ID: {}, 错误: {}", chatId, e.getMessage());
-                    return Flux.just("AI 服务异常");
+                    String errMsg = "AI 服务异常";
+                    // 手动持久化错误消息，避免刷新后丢失
+                    chatMemory.add(chatId, List.of(
+                            new AssistantMessage(errMsg)
+                    ));
+                    return Flux.just(errMsg);
                 })
                 .defaultIfEmpty("未收到AI响应");
     }
 
     /**
-     * 获取用户的历史会话列表
+     * 获取用户的历史会话列表（含标题）
      */
     @GetMapping("/chat/history")
     public Result getChatHistory() {
         Long userId = UserHolder.getUser().getId();
-        List<String> chatIds = chatHistoryRepository.getChatIds(userId);
-        return Result.ok(chatIds);
+        return Result.ok(chatHistoryRepository.getSessionList(userId));
     }
     
     /**

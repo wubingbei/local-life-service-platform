@@ -31,7 +31,7 @@
       <div class="name">{{user.nickName}}</div>
       <span>{{info.city || '未设置'}}</span>
     </div>
-    <div class="logout-btn" @click="follow">
+    <div class="logout-btn" :class="{followed: followed}" @click="follow">
       {{followed ? "取消关注" : "关注"}}
     </div>
   </div>
@@ -58,7 +58,7 @@
         <div class="empty-desc">这个人还没有分享任何内容</div>
       </div>
       <div v-for="b in blogs" :key="b.id" class="blog-item" @click="toBlogDetail(b)">
-        <div class="blog-img"><img :src="(b.images || '').split(',')[0]" alt=""></div>
+        <div class="blog-img" v-if="(b.images || '').split(',')[0]"><img :src="(b.images || '').split(',')[0]" alt=""></div>
         <div class="blog-info">
           <div class="blog-title">{{b.title}}</div>
           <div class="blog-meta">
@@ -135,7 +135,7 @@
     },
     created() {
       if (!sessionStorage.getItem("token")) {
-        location.href = "/login2.html?redirect=" + encodeURIComponent(location.href);
+        location.href="login2.html?redirect=" + encodeURIComponent(location.href);
         return;
       }
       this.queryUser();
@@ -143,20 +143,20 @@
     },
     methods: {
       queryBlogs() {
-        axios.get("/blog/of/user", {
+        axios.get("blog/of/user", {
             params: {id: this.user.id, current: 1}
           })
           .then(({data}) => this.blogs = data || [])
           .catch(() => {})
       },
       queryLoginUser() {
-        axios.get("/user/me")
+        axios.get("user/me")
           .then(({data}) => { this.loginUser = data; })
           .catch(() => {})
       },
       queryUser() {
         let id = util.getUrlParam("id")
-        axios.get("/user/" + id)
+        axios.get("user/" + id)
           .then(({data}) => {
             this.user = data;
             this.queryUserInfo();
@@ -170,7 +170,7 @@
         history.back();
       },
       queryUserInfo(id) {
-        axios.get("/user/info/" + this.user.id)
+        axios.get("user/info/" + this.user.id)
           .then(({data}) => {
             if (!data) return;
             this.info = data;
@@ -179,23 +179,26 @@
           .catch(() => {})
       },
       queryCommonFollow() {
-        axios.get("/follow/common/" + this.user.id)
+        axios.get("follow/common/" + this.user.id)
           .then(({data}) => this.commonFollows = data || [])
           .catch(() => {})
       },
       isFollowed() {
-        axios.get("/follow/or/not/" + this.user.id)
+        axios.get("follow/or/not/" + this.user.id)
           .then(({data}) => this.followed = data)
           .catch(() => {})
       },
       follow() {
         if (!requireLogin()) return;
+        var self = this;
         axios.put("/follow/" + this.user.id + "/" + !this.followed)
-          .then(() => {
-            this.$message.success(this.followed ? "已取消关注" : "已关注");
-            this.followed = !this.followed;
+          .then(function() {
+            self.$message.success(self.followed ? "已取消关注" : "已关注");
+            self.followed = !self.followed;
           })
-          .catch(() => {})
+          .catch(function(err) {
+            self.$message.error(err || "操作失败");
+          })
       },
       switchTab(name) {
         this.activeName = name;
@@ -204,7 +207,7 @@
         if (!requireLogin()) return;
         axios.put("/blog/like/" + b.id)
           .then(() => {
-            axios.get("/blog/" + b.id).then(({data}) => {
+            axios.get("blog/" + b.id).then(({data}) => {
               b.liked = data.liked;
               b.isLike = data.isLike;
             }).catch(() => {});
@@ -222,7 +225,7 @@
           this.$message.warning("请输入评价内容");
           return;
         }
-        axios.post("/blog-comments", {
+        axios.post("blog-comments", {
           blogId: this.commentBlog.id,
           content: this.commentInput.trim()
         }).then(() => {
@@ -234,10 +237,10 @@
         });
       },
       toOtherInfo(uid) {
-        location.href = "/other-info.html?id=" + uid;
+        location.href="other-info.html?id=" + uid;
       },
       toBlogDetail(b) {
-        location.href = "/blog-detail.html?id=" + b.id;
+        location.href="blog-detail.html?id=" + b.id;
       },
     },
 

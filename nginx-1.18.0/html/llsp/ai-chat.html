@@ -160,7 +160,7 @@
     <div class="chat-bar">
         <select v-model="currentChatId" @change="loadMessages">
             <option value="">-- 选择会话 --</option>
-            <option v-for="c in chatList" :key="c" :value="c">{{c}}</option>
+            <option v-for="c in chatList" :key="c.chatId" :value="c.chatId">{{c.title}}</option>
         </select>
         <button class="btn-sm btn-new" @click="newChat">+ 新建</button>
         <button class="btn-sm btn-del" @click="delChat" v-if="currentChatId">删除</button>
@@ -184,6 +184,7 @@
         <input v-model="input" placeholder="输入消息..." @keypress.enter="send">
         <button :disabled="loading || !currentChatId" @click="send">发送</button>
     </div>
+    <div class="site-disclaimer">本系统为个人学习项目Demo，仅用于技术学习与展示，不提供任何真实商业服务，不收集用户数据，不盈利。</div>
 </div>
 <script src="./js/vue.js"></script>
 <script src="./js/axios.min.js"></script>
@@ -201,11 +202,11 @@ const app = new Vue({
     created() {
         // 有历史对话则沿用最近一次，否则新建对话
         var self = this;
-        axios.get("/ai/chat/history")
+        axios.get("ai/chat/history")
             .then(({data}) => {
                 self.chatList = data || [];
                 if (self.chatList.length > 0) {
-                    self.currentChatId = self.chatList[self.chatList.length - 1];
+                    self.currentChatId = self.chatList[self.chatList.length - 1].chatId;
                     self.loadMessages();
                 } else {
                     self.newChat();
@@ -216,13 +217,13 @@ const app = new Vue({
     methods: {
         goBack() { history.back(); },
         loadChatList() {
-            axios.get("/ai/chat/history")
+            axios.get("ai/chat/history")
                 .then(({data}) => { this.chatList = data || []; })
                 .catch(() => {});
         },
         loadMessages() {
             if (!this.currentChatId) return;
-            axios.get("/ai/chat/" + this.currentChatId + "/messages")
+            axios.get("ai/chat/" + this.currentChatId + "/messages")
                 .then(({data}) => {
                     this.messages = (data || []).map(m => ({
                         role: (m.role || '').toLowerCase().includes('user') ? 'user' : 'assistant',
@@ -233,7 +234,7 @@ const app = new Vue({
                 .catch(() => { this.messages = []; });
         },
         newChat() {
-            axios.post("/ai/chat/new")
+            axios.post("ai/chat/new")
                 .then(({data}) => {
                     this.currentChatId = data;
                     this.messages = [];
@@ -270,31 +271,59 @@ const app = new Vue({
                 var reader = r.body.getReader();
                 var decoder = new TextDecoder();
                 var aiText = '';
+                var sseBuffer = '';
                 self.messages.push({ role: 'assistant', content: '' });
                 var idx = self.messages.length - 1;
+
+                function appendSseEvent(eventBlock) {
+                    if (!eventBlock) return;
+                    var payload = '';
+                    eventBlock.split('\n').forEach(function(line) {
+                        if (line.indexOf('data:') !== 0) return;
+                        var d = line.substring(5);
+                        if (d.charAt(0) === ' ') d = d.substring(1);
+                        if (d === '[DONE]') return;
+                        if (payload) payload += '\n';
+                        payload += d;
+                    });
+                    if (payload) aiText += payload;
+                }
+
+                function consumeSseBuffer(finalFlush) {
+                    var parts = sseBuffer.split('\n\n');
+                    if (!finalFlush) {
+                        sseBuffer = parts.pop() || '';
+                    } else {
+                        sseBuffer = '';
+                    }
+                    parts.forEach(appendSseEvent);
+                }
+
+                function finishStream() {
+                    consumeSseBuffer(true);
+                    self.loading = false;
+                    if (!aiText) {
+                        self.$set(self.messages[idx], 'content', '（无响应）');
+                    } else {
+                        self.$set(self.messages[idx], 'content', self.normalizeMarkdown(aiText));
+                    }
+                    self.$nextTick(() => self.scrollEnd());
+                }
+
                 function read() {
                     reader.read().then(chunk => {
                         if (chunk.done) {
-                            self.loading = false;
-                            if (!aiText) self.messages[idx].content = '（无响应）';
-                            self.$nextTick(() => self.scrollEnd());
+                            finishStream();
                             return;
                         }
-                        var text = decoder.decode(chunk.value, { stream: true });
-                        var lines = text.split('\n');
-                        lines.forEach(line => {
-                            line = line.trim();
-                            if (line.startsWith('data:')) {
-                                var d = line.substring(5).trim();
-                                if (d && d !== '[DONE]') aiText += d;
-                            }
-                        });
-                        self.messages[idx].content = aiText;
+                        sseBuffer += decoder.decode(chunk.value, { stream: true });
+                        consumeSseBuffer(false);
+                        self.$set(self.messages[idx], 'content', self.normalizeMarkdown(aiText));
                         self.$nextTick(() => self.scrollEnd());
                         read();
                     }).catch(() => {
-                        // SSE 流异常结束，保留已收到的内容（含超时/错误提示）
-                        if (!aiText) self.messages[idx].content = 'AI 服务异常，请稍后重试';
+                        if (!aiText) self.$set(self.messages[idx], 'content', 'AI 服务异常，请稍后重试');
+                        else self.$set(self.messages[idx], 'content', self.normalizeMarkdown(aiText));
                         self.loading = false;
                     });
                 }
@@ -313,10 +342,15 @@ const app = new Vue({
                 this.$nextTick(() => { el.scrollTop = el.scrollHeight; });
             }
         },
+        // 修正流式拼接导致的表格行粘连（如 |表头||---|、|行1||行2|）
+        normalizeMarkdown(text) {
+            if (!text) return '';
+            return text.replace(/\r\n/g, '\n').replace(/\|\|/g, '|\n|').trim();
+        },
         // 简易 Markdown 渲染，支持表格、加粗、列表、分隔线
         renderMarkdown(text) {
             if (!text) return '';
-            text = text.trim(); // 去除首尾空行
+            text = this.normalizeMarkdown(text);
             // 先转义 HTML 特殊字符，防止 AI 回复中的 < > & 等被浏览器当作标签解析
             var escaped = this.escapeHtml(text);
             var lines = escaped.split('\n');

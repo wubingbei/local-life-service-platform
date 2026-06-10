@@ -7,6 +7,7 @@ import com.llsp.entity.BlogComments;
 import com.llsp.mapper.BlogCommentsMapper;
 import com.llsp.service.IBlogCommentsService;
 import com.llsp.service.IBlogService;
+import com.llsp.utils.ContentSecurityUtils;
 import com.llsp.utils.UserHolder;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.stereotype.Service;
@@ -51,6 +52,11 @@ public class BlogCommentsServiceImpl extends ServiceImpl<BlogCommentsMapper, Blo
 
     @Override
     public Result saveComment(BlogComments comment) {
+        // 内容安全检测
+        String err = ContentSecurityUtils.validateContent(comment.getContent());
+        if (err != null) {
+            return Result.fail(err);
+        }
         Long userId = UserHolder.getUser().getId();
         comment.setUserId(userId);
         comment.setParentId(0L);

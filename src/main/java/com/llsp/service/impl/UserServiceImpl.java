@@ -9,7 +9,7 @@ import com.llsp.dto.LoginFormDTO;
 import com.llsp.dto.Result;
 import com.llsp.dto.UserDTO;
 import com.llsp.entity.User;
-import com.llsp.entity.UserInfo;
+
 import com.llsp.mapper.UserMapper;
 import com.llsp.service.IUserInfoService;
 import com.llsp.service.IUserService;
@@ -32,7 +32,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static com.llsp.utils.RedisConstants.*;
-import static com.llsp.utils.SystemConstants.USER_NICK_NAME_PREFIX;
+
 
 @Slf4j
 @Service
@@ -94,14 +94,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
             }
             user = query().eq("phone", phone).one();
             if (user == null) {
-                // 新用户，自动注册
-                user = createUserWithPhone(phone);
+                return Result.fail("该手机号未注册！");
             }
         } else if (password != null && !password.isEmpty()) {
             // ========== 密码登录 ==========
             user = query().eq("phone", phone).one();
             if (user == null) {
-                return Result.fail("用户不存在，请先使用验证码登录！");
+                return Result.fail("该手机号未注册！");
             }
             if (user.getPassword() == null) {
                 return Result.fail("该账号未设置密码，请使用验证码登录！");
@@ -196,24 +195,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
             num >>>= 1;
         }
         return Result.ok(count);
-    }
-
-    /**
-     * 通过电话创建用户
-     * @param phone
-     * @return
-     */
-    private User createUserWithPhone(String phone) {
-        User user = new User();
-        user.setPhone(phone);
-        user.setNickName(USER_NICK_NAME_PREFIX+RandomUtil.randomString(10));
-        //保存用户
-        save(user);
-        // 同步创建 tb_user_info 记录，避免后续查询返回空导致前端硬编码兜底
-        UserInfo info = new UserInfo();
-        info.setUserId(user.getId());
-        userInfoService.save(info);
-        return user;
     }
 
 }

@@ -48,6 +48,7 @@
       评分 <i class="el-icon-arrow-down el-icon--right"></i>
     </div>
   </div>
+  <div class="tips-bar">温馨提示：商家信息、优惠券、秒杀活动均为模拟测试数据，无真实交易、无支付功能、不对外提供商业服务。</div>
   <div class="shop-list" @scroll="onScroll">
     <div class="shop-box" v-for="s in shops" :key="s.id" @click="toDetail(s.id)">
       <div class="shop-img"><img :src="s.images" alt=""></div>
@@ -77,6 +78,7 @@
     </div>
     <div v-if="noMore && shops.length > 0" style="text-align:center;color:#ccc;padding:16px;font-size:13px;">— 没有更多了 —</div>
   </div>
+  <div class="site-disclaimer">本系统为个人学习项目Demo，仅用于技术学习与展示，不提供任何真实商业服务，不收集用户数据，不盈利。</div>
 </div>
 <script src="./js/vue.js"></script>
 <script src="./js/axios.min.js"></script>
@@ -107,7 +109,7 @@
     },
     created() {
       if (!sessionStorage.getItem("token")) {
-        location.href = "/login2.html?redirect=" + encodeURIComponent(location.href);
+        location.href="login2.html?redirect=" + encodeURIComponent(location.href);
         return;
       }
       // 获取参数
@@ -133,7 +135,7 @@
     },
     methods: {
       queryTypes() {
-        axios.get("/shop-type/list")
+        axios.get("shop-type/list")
           .then(({data}) => {
             this.types = data;
           })
@@ -144,7 +146,7 @@
       },
       queryShops() {
         if (this.noMore) return;
-        axios.get("/shop/of/type", {
+        axios.get("shop/of/type", {
             params: this.params
           })
           .then(({data}) => {
@@ -162,7 +164,7 @@
       },
       queryShopsByName() {
         if (this.noMore) return;
-        axios.get("/shop/of/name", {
+        axios.get("shop/of/name", {
             params: {
               name: this.params.keyword,
               current: this.params.current
@@ -182,7 +184,7 @@
           })
       },
       handleCommand(t) {
-        location.href = "/shop-list.html?type="+t.id+"&name="+t.name;
+        location.href="shop-list.html?type="+t.id+"&name="+t.name;
       },
       sortAndQuery(sortBy) {
         this.params.sortBy = sortBy;
@@ -192,10 +194,10 @@
         this.queryShops();
       },
       goBack() {
-        location.href = "/index.html";
+        location.href="index.html";
       },
       toDetail(id) {
-        location.href = "/shop-detail.html?id="+id
+        location.href="shop-detail.html?id="+id
       },
       onScroll(e) {
         let scrollTop = e.target.scrollTop;
@@ -225,7 +227,7 @@
           self.isReachBottom = false;
         };
         if (this.isSearchMode) {
-          axios.get("/shop/of/name", { params: { name: this.params.keyword, current: this.params.current } })
+          axios.get("shop/of/name", { params: { name: this.params.keyword, current: this.params.current } })
             .then(({data}) => {
               if (!data || data.length === 0) { this.noMore = true; done(); return; }
               data.forEach(s => s.images = s.images.split(',')[0]);
@@ -234,7 +236,7 @@
             })
             .catch(err => { this.$message.error(err); done(); });
         } else {
-          axios.get("/shop/of/type", { params: this.params })
+          axios.get("shop/of/type", { params: this.params })
             .then(({data}) => {
               if (!data || data.length === 0) { this.noMore = true; done(); return; }
               data.forEach(s => s.images = s.images.split(',')[0]);

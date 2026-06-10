@@ -23,20 +23,22 @@
     <div class="content">
       <div class="login-form">
         <div style="display: flex; justify-content: space-between">
-          <el-input style="width: 60%" placeholder="请输入手机号" v-model="form.phone" >
-          </el-input>
+          <el-input style="width: 60%" placeholder="请输入手机号" v-model="form.phone"></el-input>
           <el-button style="width: 38%" @click="sendCode" type="success" :disabled="disabled">{{codeBtnMsg}}</el-button>
         </div>
 
         <div style="height: 5px"></div>
-        <el-input placeholder="请输入验证码" v-model="form.code">
-        </el-input>
-        <div style="text-align: center; color: #8c939d;margin: 5px 0">未注册的手机号码验证后自动创建账户</div>
+        <el-input placeholder="请输入验证码" v-model="form.code"></el-input>
+        <div style="text-align: center; color: black; font-size: 14px; margin: 6px 0 0 0;">测试手机号：15100000000</div>
+        <div style="text-align: center; color: #999; font-size: 12px; margin: 10px 0; line-height: 1.6;">
+          本系统为个人学习项目，不向公众开放，不提供任何公开服务。<br>
+          所有用户均为手动添加的测试账号，不开放注册；所有内容均为测试数据，不涉及任何真实商业或公开服务。
+        </div>
         <el-button @click="login" style="width: 100%; background-color:#FF2442; color: #fff;">登录</el-button>
         <div style="text-align: center; margin-top: 15px;">
-          <a href="/index.html" style="color: #999; font-size: 13px;">先逛逛，暂不登录</a>
+          <a href="index.html" style="color: #999; font-size: 13px;">先逛逛，暂不登录</a>
         </div>
-        <div style="text-align: right; color:#333333; margin: 5px 0"><a href="/login2.html">密码登录</a></div>
+        <div style="text-align: right; color:#333333; margin: 5px 0"><a href="login2.html">密码登录</a></div>
       </div>
       <div class="login-radio">
         <div>
@@ -52,6 +54,7 @@
       </div>
     </div>
   </div>
+
 </div>
 <script src="./js/vue.js"></script>
 <script src="./js/axios.min.js"></script>
@@ -68,48 +71,59 @@
       disabled: false, // 发送短信按钮
       codeBtnMsg: "发送验证码", // 发送短信按钮提示
       form:{
+        phone: '',
+        code: ''
       }
     },
     methods: {
+      // 弹窗提示错误
+      showError(msg) {
+        this.$message.error(msg);
+      },
       login(){
         if(!this.radio){
-          this.$message.error("请先确认阅读用户协议！");
+          this.showError("请先确认阅读用户协议！");
           return
         }
         if(!this.form.phone){
-          this.$message.error("手机号不能为空！");
+          this.showError("手机号不能为空！");
           return
         }
         if(!/^1[3-9]\d{9}$/.test(this.form.phone)){
-          this.$message.error("手机号格式错误！");
+          this.showError("手机号格式错误！");
           return
         }
         if(!this.form.code){
-          this.$message.error("验证码不能为空！");
+          this.showError("验证码不能为空！");
           return
         }
-        axios.post("/user/login", this.form)
+        axios.post("user/login", this.form)
         .then(({data}) => {
             if(data){
               // 保存用户信息到session
               sessionStorage.setItem("token", data);
             }
-            // 跳转回原页面，没有则跳首页
+            // 跳转回原页面，没有则跳首页（replace 替换历史记录，避免后退回到登录页）
             var redirect = util.getUrlParam("redirect");
-            location.href = redirect || "/index.html";
+            location.replace(redirect || "/index.html");
         })
-        .catch(err => this.$message.error(err))
+        .catch(err => this.showError(err))
       },
       goBack(){
-        location.href = "/index.html";
+        location.href="index.html";
       },
       sendCode(){
         if (!this.form.phone) {
-          this.$message.error("手机号不能为空");
+          this.showError("手机号不能为空");
+          return;
+        }
+        // 前端校验手机号格式
+        if (!/^1[3-9]\d{9}$/.test(this.form.phone)) {
+          this.showError("手机号格式错误！");
           return;
         }
         // 发送验证码
-        axios.post("/user/code?phone="+this.form.phone)
+        axios.post("user/code?phone="+this.form.phone)
           .then(({data}) => {
             // 后端返回验证码，自动填入输入框
             if (data) {
@@ -121,7 +135,7 @@
           })
           .catch(err => {
             console.log(err);
-            this.$message.error(err)
+            this.showError(err)
           });
         // 禁用按钮
         this.disabled = true;

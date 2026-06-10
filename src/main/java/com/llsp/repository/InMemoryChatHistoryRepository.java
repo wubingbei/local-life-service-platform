@@ -1,15 +1,17 @@
 package com.llsp.repository;
 
 import cn.hutool.core.util.IdUtil;
+import com.llsp.dto.ChatSessionDTO;
 import com.llsp.utils.RedisConstants;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.stereotype.Component;
-
 import jakarta.annotation.Resource;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-@Component
+/**
+ * Redis 实现，已废弃，保留代码供参考。现使用 MysqlChatHistoryRepository。
+ */
+// @Component  // 已切换为 MySQL 实现，取消注释可切回 Redis
 public class InMemoryChatHistoryRepository implements ChatHistoryRepository{
     
     @Resource
@@ -36,6 +38,14 @@ public class InMemoryChatHistoryRepository implements ChatHistoryRepository{
         return chatIds != null ? chatIds : List.of();
     }
     
+    @Override
+    public List<ChatSessionDTO> getSessionList(Long userId) {
+        // Redis 版不支持标题，直接返回 chatId 列表
+        return getChatIds(userId).stream()
+                .map(id -> new ChatSessionDTO(id, "会话"))
+                .toList();
+    }
+
     @Override
     public String generateChatId() {
         // 使用UUID生成唯一的会话ID

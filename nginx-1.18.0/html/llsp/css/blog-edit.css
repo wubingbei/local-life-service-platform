@@ -1,9 +1,23 @@
+/* 页面整体布局：flex 列，让滚动区域自动填充 */
+#app {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.edit-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
 .header{
     padding: 15px;
     line-height: 20px;
     display: flex;
     justify-content: space-between;
     text-align: center;
+    flex-shrink: 0;
 }
 .header-cancel-btn{
     font-size: 14px;
@@ -33,7 +47,12 @@
 .upload-box {
     padding: 15px;
     display: flex;
-    overflow-x: scroll;
+    flex-wrap: nowrap;
+    align-items: flex-start;
+    gap: 8px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
 }
 .upload-btn {
     width: 70px;
@@ -46,28 +65,27 @@
     font-size: 30px;
     color: #82848a;
     margin-right: 10px;
+    flex-shrink: 0;
 }
 .upload-btn i {
     margin-top: 35px;
 }
 
-.pic-list {
-    display: flex;
-    overflow-x: scroll;
-    height: 125px;
-}
 .pic-box{
     width: 100px;
     height: 120px;
     border-radius: 5px;
-    margin-right: 2px;
     border: 1px solid #c0ccda;
     position: relative;
+    flex-shrink: 0;
+    overflow: hidden;
 }
 .pic-box img {
     width: 100px;
     height: 120px;
     border-radius: 5px;
+    object-fit: cover;
+    display: block;
 }
 .pic-box i {
     position: absolute;
@@ -97,8 +115,9 @@ textarea::placeholder {
 }
 .blog-content textarea{
     width: 100%;
-    height: 310px;
+    height: 180px;
     border: 0;
+    font-size: 16px; /* 防止 iOS 缩放 */
 }
 .blog-shop {
     color: #82848a;
@@ -233,7 +252,6 @@ input:focus,textarea:focus {
     .upload-btn:hover { border-color: #FF2442; color: #FF2442; }
     .upload-btn i { margin-top: 56px; }
     .upload-btn div { font-size: 13px; margin-top: 4px; }
-    .pic-list { height: 180px; }
     .pic-box {
         width: 150px;
         height: 175px;

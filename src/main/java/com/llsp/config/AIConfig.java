@@ -1,5 +1,7 @@
 package com.llsp.config;
 
+import com.llsp.mapper.ChatMessageMapper;
+import com.llsp.mapper.ChatSessionMapper;
 import com.llsp.tools.BlogTools;
 import com.llsp.tools.SeckillTools;
 import com.llsp.tools.ShopTools;
@@ -12,15 +14,15 @@ import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.redis.core.StringRedisTemplate;
 
 @Configuration
 public class AIConfig {
-    
+
     @Bean
-    public ChatMemory chatMemory(StringRedisTemplate stringRedisTemplate) {
-        // 使用基于Redis的ChatMemory，保留最近20条消息
-        return new RedisChatMemory(stringRedisTemplate, 20);
+    public ChatMemory chatMemory(ChatMessageMapper messageMapper,
+                                  ChatSessionMapper sessionMapper) {
+        // 使用基于MySQL的ChatMemory，保留最近50条消息（不再受Redis内存限制）
+        return new MysqlChatMemory(messageMapper, sessionMapper, 50);
     }
 
     @Bean

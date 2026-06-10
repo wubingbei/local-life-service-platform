@@ -47,6 +47,15 @@ body {
     text-align: center;
     font-size: 12px;
 }
+.tips-bar {
+    padding: 8px 12px;
+    background-color: #fff8f0;
+    border-bottom: 1px solid #ffe8d9;
+    text-align: center;
+    font-size: 11px;
+    color: #ff6b35;
+    flex-shrink: 0;
+}
 .shop-list{
     flex: 1;
     min-height: 0;

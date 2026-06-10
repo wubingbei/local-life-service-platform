@@ -22,11 +22,11 @@
 <div id="app">
   <div class="header">
     <div class="header-back-btn" @click="goBack"><i class="el-icon-arrow-left"></i></div>
-    <div class="header-title"></div>
+    <div class="header-title">{{blog.title}}</div>
     <div class="header-share">...</div>
   </div>
   <div class="blog-scroll">
-    <div class="blog-info-box" ref="swiper"
+    <div class="blog-info-box" ref="swiper" v-if="blog.images && blog.images.length > 0"
          @touchstart="moveStart"
          @touchmove="moving"
          @touchend="moveEnd"
@@ -56,12 +56,13 @@
         <span class="time">{{formatTime(new Date(blog.createTime))}}</span>
       </div>
       <div style="width: 20%">
-        <div class="logout-btn" @click="follow" v-show="!user || user.id !== blog.userId ">
+        <div class="logout-btn" :class="{followed: followed}" @click="follow" v-show="!user || user.id !== blog.userId ">
           {{followed ? '取消关注' : '关注'}}
         </div>
       </div>
 
     </div>
+    <div class="blog-title-text">{{blog.title}}</div>
     <div class="blog-text" v-html="blog.content">
     </div>
     <div class="shop-basic">
@@ -137,6 +138,7 @@
       <div class="foot-view"><i class="el-icon-chat-square"></i><span>评论</span></div>
     </div>
   </div>
+  <div class="site-disclaimer">本系统为个人学习项目Demo，仅用于技术学习与展示，不提供任何真实商业服务，不收集用户数据，不盈利。</div>
 </div>
 <script src="./js/vue.js"></script>
 <script src="./js/axios.min.js"></script>
@@ -180,7 +182,7 @@
     },
     created() {
       if (!sessionStorage.getItem("token")) {
-        location.href = "/login2.html?redirect=" + encodeURIComponent(location.href);
+        location.href="login2.html?redirect=" + encodeURIComponent(location.href);
         return;
       }
       let id = util.getUrlParam("id");
@@ -202,6 +204,8 @@
     },
     methods: {
       init() {
+        // 无图片时跳过轮播初始化
+        if (!this.$refs.swiper) return;
         // 获得父容器节点
         this.container = this.$refs.swiper
         // 获得所有的子节点
@@ -215,15 +219,15 @@
       },
       toOtherInfo(){
         if(this.blog.userId === this.user.id){
-          location.href = "/info.html"
+          location.href="info.html"
         }else{
-          location.href = "/other-info.html?id=" + this.blog.userId
+          location.href="other-info.html?id=" + this.blog.userId
         }
       },
       queryBlogById(id) {
-        axios.get("/blog/" + id)
+        axios.get("blog/" + id)
           .then(({data}) => {
-            data.images = data.images.split(",")
+            data.images = data.images ? data.images.split(",").filter(Boolean) : []
             this.blog = data;
             this.$nextTick(this.init);
             this.queryShopById(data.shopId)
@@ -234,20 +238,20 @@
           .catch(this.$message.error)
       },
       queryShopById(shopId) {
-        axios.get("/shop/" + shopId)
+        axios.get("shop/" + shopId)
           .then(({data}) => {
-            data.image = data.images.split(",")[0]
+            data.image = (data.images || '').split(",")[0]
             this.shop = data
           })
           .catch(this.$message.error)
       },
       queryLikeList(id){
-        axios.get("/blog/likes/" + id)
+        axios.get("blog/likes/" + id)
           .then(({data}) => this.likes = data)
           .catch(this.$message.error)
       },
       queryComments(id){
-        axios.get("/blog-comments/of/" + id)
+        axios.get("blog-comments/of/" + id)
           .then(({data}) => { this.comments = data || []; })
           .catch(() => {})
       },
@@ -276,12 +280,12 @@
           _optimistic: true
         };
         self.comments.unshift(optimistic);
-        axios.post("/blog-comments", {
+        axios.post("blog-comments", {
           blogId: self.blog.id,
           content: content
         }).then(function(res) {
           // 用服务器数据替换乐观条目
-          axios.get("/blog-comments/of/" + self.blog.id).then(function(r) {
+          axios.get("blog-comments/of/" + self.blog.id).then(function(r) {
             self.comments = (r.data || []).map(function(c) {
               c._optimistic = false;
               return c;
@@ -289,9 +293,9 @@
             self.sending = false;
             self.$message.success("评价成功");
             // 刷新笔记评论数
-            axios.get("/blog/" + self.blog.id).then(function(r2) {
+            axios.get("blog/" + self.blog.id).then(function(r2) {
               var d = r2.data;
-              d.images = d.images.split(",");
+              d.images = d.images ? d.images.split(",").filter(Boolean) : [];
               self.blog = d;
             });
           }).catch(function() {
@@ -327,14 +331,14 @@
           axios.delete("/blog-comments/" + id).then(function() {
             self.$message.success("已删除");
             // 刷新博客评论数
-            axios.get("/blog/" + self.blog.id).then(function(r) {
+            axios.get("blog/" + self.blog.id).then(function(r) {
               var d = r.data;
-              d.images = d.images.split(",");
+              d.images = d.images ? d.images.split(",").filter(Boolean) : [];
               self.blog = d;
             });
           }).catch(function(err) {
             // 删除失败：从服务器重新拉取确保数据一致
-            axios.get("/blog-comments/of/" + self.blog.id).then(function(r) {
+            axios.get("blog-comments/of/" + self.blog.id).then(function(r) {
               self.comments = r.data || [];
             }).catch(function() {
               // 网络完全断开时恢复备份
@@ -351,9 +355,9 @@
         if (!requireLogin()) return;
         axios.put("/blog/like/" +this.blog.id)
           .then(({data}) => {
-            axios.get("/blog/" + this.blog.id)
+            axios.get("blog/" + this.blog.id)
               .then(({data}) => {
-                data.images = data.images.split(",")
+                data.images = data.images ? data.images.split(",").filter(Boolean) : []
                 this.blog = data;
                 this.queryLikeList(this.blog.id);
               })
@@ -364,7 +368,7 @@
           })
       },
       isFollowed(){
-        axios.get("/follow/or/not/" + this.blog.userId)
+        axios.get("follow/or/not/" + this.blog.userId)
           .then(({data}) => this.followed = data)
           .catch(this.$message.error)
       },
@@ -386,7 +390,7 @@
       },
       queryLoginUser(){
         // 查询用户信息
-        axios.get("/user/me")
+        axios.get("user/me")
           .then(({ data }) => {
             // 保存用户
             this.user = data;

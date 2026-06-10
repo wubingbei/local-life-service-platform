@@ -7,6 +7,7 @@ import com.llsp.mapper.ShopCommentsMapper;
 import com.llsp.service.IShopCommentsService;
 import com.llsp.service.IUserService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.llsp.utils.ContentSecurityUtils;
 import com.llsp.utils.UserHolder;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,11 @@ public class ShopCommentsServiceImpl extends ServiceImpl<ShopCommentsMapper, Sho
 
     @Override
     public Result saveComment(ShopComments comment) {
+        // 内容安全检测
+        String err = ContentSecurityUtils.validateContent(comment.getContent());
+        if (err != null) {
+            return Result.fail(err);
+        }
         Long userId = UserHolder.getUser().getId();
         comment.setUserId(userId);
         comment.setCreateTime(java.time.LocalDateTime.now());

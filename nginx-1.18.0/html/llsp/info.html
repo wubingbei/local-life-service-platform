@@ -69,7 +69,7 @@
           <div class="empty-desc">记录生活点滴，分享你的精彩瞬间</div>
         </div>
         <div v-for="b in blogs" :key="b.id" class="blog-item" @click="toBlogDetail(b)">
-          <div class="blog-img"><img :src="(b.images || '').split(',')[0]" alt=""></div>
+          <div class="blog-img" v-if="(b.images || '').split(',')[0]"><img :src="(b.images || '').split(',')[0]" alt=""></div>
           <div class="blog-info">
             <div class="blog-title">{{b.title}}</div>
             <div class="blog-meta">
@@ -189,27 +189,27 @@
       },
       methods: {
         queryBlogs() {
-          axios.get("/blog/of/me")
+          axios.get("blog/of/me")
             .then(({ data }) => { this.blogs = data || []; })
             .catch(() => {})
         },
         queryMyComments() {
-          axios.get("/blog-comments/my")
+          axios.get("blog-comments/my")
             .then(({ data }) => { this.myComments = data || []; })
             .catch(() => {})
         },
         queryFollowers() {
-          axios.get("/follow/my/followers")
+          axios.get("follow/my/followers")
             .then(({ data }) => { this.followers = data || []; })
             .catch(() => {})
         },
         queryFollowings() {
-          axios.get("/follow/my/following")
+          axios.get("follow/my/following")
             .then(({ data }) => { this.followings = data || []; })
             .catch(() => {})
         },
         queryUser() {
-          axios.get("/user/me")
+          axios.get("user/me")
             .then(({ data }) => {
               this.user = data;
               this.queryUserInfo();
@@ -226,7 +226,7 @@
           history.back();
         },
         queryUserInfo() {
-          axios.get("/user/info/" + this.user.id)
+          axios.get("user/info/" + this.user.id)
             .then(({ data }) => {
               if (!data) { return }
               this.info = data;
@@ -241,19 +241,19 @@
           location.href = 'my-vouchers.html'
         },
         toBlogDetail(b) {
-          location.href = '/blog-detail.html?id=' + b.id
+          location.href = 'blog-detail.html?id=' + b.id
         },
         goToBlog(blogId) {
-          if (blogId) location.href = '/blog-detail.html?id=' + blogId
+          if (blogId) location.href = 'blog-detail.html?id=' + blogId
         },
         toOtherInfo(uid) {
-          location.href = '/other-info.html?id=' + uid
+          location.href = 'other-info.html?id=' + uid
         },
         // 点赞
         addLike(b) {
           axios.put("/blog/like/" + b.id)
             .then(() => {
-              axios.get("/blog/" + b.id).then(({data}) => {
+              axios.get("blog/" + b.id).then(({data}) => {
                 b.liked = data.liked;
                 b.isLike = data.isLike;
               }).catch(() => {});
@@ -271,7 +271,7 @@
             this.$message.warning("请输入评价内容");
             return;
           }
-          axios.post("/blog-comments", {
+          axios.post("blog-comments", {
             blogId: this.commentBlog.id,
             content: this.commentInput.trim()
           }).then(() => {
@@ -320,10 +320,10 @@
             .catch(() => {})
         },
         logout() {
-          axios.post("/user/logout")
+          axios.post("user/logout")
             .then(() => {
               sessionStorage.removeItem("token")
-              location.href = "/"
+              location.href=""
             })
             .catch(this.$message.error)
         },
