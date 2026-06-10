@@ -10,14 +10,13 @@ setTimeout(function() {
       opts.center = true;
       return _msg.call(this, opts);
     };
-    // 快捷方法也覆盖
+    // 快捷方法也覆盖 — 通过 type 参数调用原始 _msg，不依赖快捷方法
     ['success','warning','error','info'].forEach(function(t) {
-      var _fn = Vue.prototype.$message[t];
       Vue.prototype.$message[t] = function(msg, opts) {
         if (typeof msg === 'string') {
-          return _fn.call(this, { message: msg, center: true });
+          return _msg({ message: msg, center: true, type: t });
         }
-        return _fn.call(this, Object.assign({}, msg || {}, { center: true }));
+        return _msg(Object.assign({}, msg || {}, { center: true, type: t }));
       };
     });
   }
@@ -65,7 +64,7 @@ axios.defaults.paramsSerializer = function(params) {
 function requireLogin() {
   if (!sessionStorage.getItem("token")) {
     if (confirm('请先登录后再操作')) {
-      location.href = '/login2.html?redirect=' + encodeURIComponent(location.href);
+      location.href = 'login2.html?redirect=' + encodeURIComponent(location.href);
     }
     return false;
   }
@@ -77,7 +76,7 @@ const util = {
     let reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");
     let r = window.location.search.substr(1).match(reg);
     if (r != null) {
-      return decodeURI(r[2]);
+      return decodeURIComponent(r[2]);
     }
     return "";
   },

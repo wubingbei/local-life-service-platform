@@ -27,13 +27,13 @@ Vue.component("footBar", {
   methods: {
     toPage(i) {
       if (i === 0) {
-        location.href = "/blog-edit.html"
+        location.href="blog-edit.html"
       } else if (i === 3) {
-        location.href = "/messages.html"
+        location.href="messages.html"
       } else if (i === 4) {
-        location.href = "/info.html"
+        location.href="info.html"
       } else if (i === 1){
-        location.href = "/"
+        location.href="index.html"
       }
     }
   }

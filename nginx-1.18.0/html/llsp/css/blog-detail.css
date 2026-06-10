@@ -148,6 +148,11 @@
     cursor: pointer;
     background: #fff;
     white-space: nowrap;
+    transition: all 0.2s;
+}
+.logout-btn.followed {
+    background: #FF2442;
+    color: #fff;
 }
 
 /* 正文 */
@@ -157,6 +162,11 @@
     line-height: 1.7;
     color: #333;
     word-break: break-all;
+    overflow: hidden;
+}
+.blog-text img {
+    max-width: 100%;
+    height: auto;
 }
 
 /* 关联商户卡片 */

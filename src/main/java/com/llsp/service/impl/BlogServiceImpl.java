@@ -154,14 +154,25 @@ public class BlogServiceImpl extends ServiceImpl<BlogMapper, Blog> implements IB
         // 1.获取登录用户
         UserDTO user = UserHolder.getUser();
         blog.setUserId(user.getId());
-        // 2.保存探店笔记
+        // 2.校验必填字段
+        if (StrUtil.isBlank(blog.getTitle())) {
+            return Result.fail("标题不能为空");
+        }
+        if (StrUtil.isBlank(blog.getContent())) {
+            return Result.fail("内容不能为空");
+        }
+        // 图片字段为空时设为空字符串，避免 null 值
+        if (blog.getImages() == null) {
+            blog.setImages("");
+        }
+        // 3.保存探店笔记
         boolean isSucccess = save(blog);
         if (!isSucccess) {
             return Result.fail("新增笔记失败！");
         }
-        // 3.查询笔记作者的粉丝
+        // 4.查询笔记作者的粉丝
         List<Follow> follows = followService.query().eq("follow_user_id", user.getId()).list();
-        // 4.推送笔记id给所有粉丝
+        // 5.推送笔记id给所有粉丝
         for (Follow follow : follows) {
             // 获取粉丝id
             Long fansId = follow.getUserId();
@@ -169,7 +180,7 @@ public class BlogServiceImpl extends ServiceImpl<BlogMapper, Blog> implements IB
             String key = FEED_KEY + fansId;
             stringRedisTemplate.opsForZSet().add(key, blog.getId().toString(), System.currentTimeMillis());
         }
-        // 3.返回id
+        // 6.返回id
         return Result.ok(blog.getId());
     }
 

@@ -6,6 +6,7 @@ import com.llsp.utils.UserHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
@@ -47,7 +48,7 @@ public class AIChatController {
      * 发送消息（需要指定会话ID）
      */
     @PostMapping(value = "/chat/{chatId}/send", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<String> chat(@PathVariable String chatId, 
+    public Flux<String> chat(@PathVariable String chatId,
                              @RequestParam String prompt) {
         Long userId = UserHolder.getUser().getId();
         // 1. 先验证会话归属
@@ -62,13 +63,23 @@ public class AIChatController {
                 .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, chatId))
                 .stream()
                 .content()
-                .timeout(Duration.ofSeconds(5), Flux.defer(() -> {
-                    log.warn("AI 首字响应超时 (5s)，会话ID: {}", chatId);
-                    return Flux.just("AI 响应超时，请稍后重试");
+                .timeout(Duration.ofSeconds(10), Flux.defer(() -> {
+                    log.warn("AI 首字响应超时 (10s)，会话ID: {}", chatId);
+                    String errMsg = "AI 响应超时，请稍后重试";
+                    // 手动持久化错误消息，避免刷新后丢失
+                    chatMemory.add(chatId, List.of(
+                            new AssistantMessage(errMsg)
+                    ));
+                    return Flux.just(errMsg);
                 }))
                 .onErrorResume(e -> {
                     log.error("AI 对话异常，会话ID: {}, 错误: {}", chatId, e.getMessage());
-                    return Flux.just("AI 服务异常");
+                    String errMsg = "AI 服务异常";
+                    // 手动持久化错误消息，避免刷新后丢失
+                    chatMemory.add(chatId, List.of(
+                            new AssistantMessage(errMsg)
+                    ));
+                    return Flux.just(errMsg);
                 })
                 .defaultIfEmpty("未收到AI响应");
     }

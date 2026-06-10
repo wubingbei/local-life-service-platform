@@ -9,8 +9,11 @@ import com.llsp.entity.User;
 import com.llsp.entity.UserInfo;
 import com.llsp.service.IUserInfoService;
 import com.llsp.service.IUserService;
+import com.llsp.utils.RedisConstants;
 import com.llsp.utils.UserHolder;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,6 +32,8 @@ public class UserController {
     private IUserInfoService userInfoService;
     @Resource
     private PasswordEncoder passwordEncoder;
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
 
     /**
      * 发送短信验证码
@@ -54,8 +59,13 @@ public class UserController {
      * @return 无
      */
     @PostMapping("/logout")
-    public Result logout(){
-        // 实现登出功能
+    public Result logout(HttpServletRequest request){
+        // 1. 删除 Redis 中的 token
+        String token = request.getHeader("authorization");
+        if (token != null && !token.isEmpty()) {
+            stringRedisTemplate.delete(RedisConstants.LOGIN_USER_KEY + token);
+        }
+        // 2. 清除 ThreadLocal
         UserHolder.removeUser();
         return Result.ok();
     }

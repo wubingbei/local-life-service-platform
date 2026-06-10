@@ -125,14 +125,14 @@
     methods: {
       checkLogin() {
         var self = this;
-        axios.get("/user/me")
+        axios.get("user/me")
         .then(function(res) {
           self.user = res.data;
           // 优先使用 sessionStorage 缓存，同时从后端加载确保数据最新
           var cached = sessionStorage.getItem("userInfo");
           self.info = cached ? JSON.parse(cached) : {};
           // 从后端API加载 UserInfo（确保数据完整）
-          axios.get("/user/info/" + self.user.id).then(function(r) {
+          axios.get("user/info/" + self.user.id).then(function(r) {
             if (r.data) {
               self.info = r.data;
               sessionStorage.setItem("userInfo", JSON.stringify(r.data));
@@ -146,10 +146,10 @@
       },
       refreshUser() {
         var self = this;
-        axios.get("/user/me").then(function(res) {
+        axios.get("user/me").then(function(res) {
           self.user = res.data;
         }).catch(function() {});
-        axios.get("/user/info/" + this.user.id).then(function(res) {
+        axios.get("user/info/" + this.user.id).then(function(res) {
           if (res.data) {
             self.info = res.data;
             sessionStorage.setItem("userInfo", JSON.stringify(res.data));

@@ -118,7 +118,7 @@
       },
       queryMyVouchers() {
         var self = this;
-        axios.get("/voucher-order/my")
+        axios.get("voucher-order/my")
           .then(function(res) {
             self.vouchers = res.data || [];
             self.loading = false;

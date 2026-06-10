@@ -39,7 +39,7 @@
     </div>
     <div class="shop-rate-info"> 口味:4.9  环境:4.8  服务:4.7 </div>
     <div class="shop-rank">
-      <img src="/imgs/bd.png" width="63" height="20" alt="">
+      <img src="imgs/bd.png" width="63" height="20" alt="">
       <span>拱墅区好评榜第3名</span>
       <div><i class="el-icon-arrow-right"></i></div>
     </div>
@@ -136,7 +136,7 @@
     },
     created() {
       if (!sessionStorage.getItem("token")) {
-        location.href = "/login2.html?redirect=" + encodeURIComponent(location.href);
+        location.href="login2.html?redirect=" + encodeURIComponent(location.href);
         return;
       }
       // 获取参数
@@ -157,7 +157,7 @@
         history.back();
       },
       queryShopById(shopId) {
-        axios.get("/shop/" + shopId)
+        axios.get("shop/" + shopId)
         .then(({data}) => {
           data.images = data.images.split(",")
           this.shop = data
@@ -165,7 +165,7 @@
         .catch(err => this.$message.error(err))
       },
       queryVoucher(shopId) {
-        axios.get("/voucher/list/" + shopId)
+        axios.get("voucher/list/" + shopId)
         .then(({data}) => {
           this.vouchers = data;
         })
@@ -190,7 +190,7 @@
         return new Date(v.endTime).getTime() < new Date().getTime();
       },
       queryComments(shopId) {
-        axios.get("/shop-comments/of/" + shopId)
+        axios.get("shop-comments/of/" + shopId)
           .then(({data}) => {
             this.comments = data || [];
           })
@@ -198,7 +198,7 @@
       },
       queryLoginUser(){
         var self = this;
-        axios.get("/user/me")
+        axios.get("user/me")
           .then(function(res) {
             self.user = res.data;
           })
@@ -212,7 +212,7 @@
           try { self.purchasedIds = JSON.parse(saved); } catch(e) {}
         }
         // 服务器数据为唯一真相来源，直接覆盖本地
-        axios.get("/voucher-order/my")
+        axios.get("voucher-order/my")
           .then(function(res) {
             var orders = res.data || [];
             var serverIds = orders.map(function(o) { return o.voucherId; });
@@ -259,12 +259,12 @@
           _optimistic: true
         };
         self.comments.unshift(optimistic);
-        axios.post("/shop-comments", {
+        axios.post("shop-comments", {
           shopId: shopId,
           content: content
         }).then(function() {
           // 用服务器数据替换乐观条目
-          axios.get("/shop-comments/of/" + shopId).then(function(r) {
+          axios.get("shop-comments/of/" + shopId).then(function(r) {
             self.comments = (r.data || []).map(function(c) {
               c._optimistic = false;
               return c;
@@ -272,7 +272,7 @@
             self.sending = false;
             self.$message({ message: "评价成功", type: "success", center: true });
             // 刷新商户评论数
-            axios.get("/shop/" + shopId).then(function(r2) {
+            axios.get("shop/" + shopId).then(function(r2) {
               var d = r2.data;
               d.images = d.images.split(",");
               self.shop = d;
@@ -297,9 +297,9 @@
       goToUser(userId) {
         if (!userId) return;
         if (this.user && this.user.id === userId) {
-          location.href = '/info.html';
+          location.href = 'info.html';
         } else {
-          location.href = '/other-info.html?id=' + userId;
+          location.href = 'other-info.html?id=' + userId;
         }
       },
       deleteComment(id) {
@@ -319,7 +319,7 @@
             self.$message({ message: "已删除", type: "success", center: true });
             // 刷新商户数据
             var shopId = util.getUrlParam("id");
-            axios.get("/shop/" + shopId).then(function(r) {
+            axios.get("shop/" + shopId).then(function(r) {
               var d = r.data;
               d.images = d.images.split(",");
               self.shop = d;
@@ -327,7 +327,7 @@
           }).catch(function(err) {
             // 删除失败：从服务器重新拉取确保数据一致
             var shopId = util.getUrlParam("id");
-            axios.get("/shop-comments/of/" + shopId).then(function(r) {
+            axios.get("shop-comments/of/" + shopId).then(function(r) {
               self.comments = r.data || [];
             }).catch(function() {
               // 网络完全断开时恢复备份
@@ -368,7 +368,7 @@
           self.savePurchasedId(id);
           if (isSeckill) {
             var shopId = util.getUrlParam("id");
-            axios.get("/voucher/list/" + shopId).then(function(r) {
+            axios.get("voucher/list/" + shopId).then(function(r) {
               self.vouchers = r.data || [];
             });
           }
@@ -380,7 +380,7 @@
           }
           if (isSeckill) {
             var shopId = util.getUrlParam("id");
-            axios.get("/voucher/list/" + shopId).then(function(r) {
+            axios.get("voucher/list/" + shopId).then(function(r) {
               self.vouchers = r.data || [];
             });
           }

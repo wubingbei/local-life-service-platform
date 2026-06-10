@@ -238,8 +238,8 @@ const app = new Vue({
             self.loading = true;
             // 同时加载关注我的用户 + 评论我的内容
             Promise.all([
-                axios.get("/follow/my/followers").then(({data}) => data || []).catch(() => []),
-                axios.get("/blog-comments/to-me").then(({data}) => data || []).catch(() => [])
+                axios.get("follow/my/followers").then(({data}) => data || []).catch(() => []),
+                axios.get("blog-comments/to-me").then(({data}) => data || []).catch(() => [])
             ]).then(function(results) {
                 var followers = results[0];
                 var comments = results[1];
@@ -296,7 +296,7 @@ const app = new Vue({
             var followItems = this.msgList.filter(function(m) { return m.showFollow && m.userId; });
             if (followItems.length === 0) return;
             var promises = followItems.map(function(m) {
-                return axios.get("/follow/or/not/" + m.userId)
+                return axios.get("follow/or/not/" + m.userId)
                     .then(function(res) {
                         m.isFollowed = res.data === true;
                     })
@@ -315,9 +315,9 @@ const app = new Vue({
         },
         onMsgClick(m) {
             if (m.type === 'comment' && m.blogId) {
-                location.href = '/blog-detail.html?id=' + m.blogId;
+                location.href = 'blog-detail.html?id=' + m.blogId;
             } else if (m.type === 'follow' && m.userId) {
-                location.href = '/other-info.html?id=' + m.userId;
+                location.href = 'other-info.html?id=' + m.userId;
             }
         },
         formatTime(timeStr) {
