@@ -4,6 +4,8 @@ package com.llsp.controller;
 import com.llsp.dto.Result;
 import com.llsp.entity.BlogComments;
 import com.llsp.service.IBlogCommentsService;
+import com.llsp.utils.UserHolder;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.annotation.Resource;
@@ -14,6 +16,8 @@ public class BlogCommentsController {
 
     @Resource
     private IBlogCommentsService blogCommentsService;
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
 
     @GetMapping("/my")
     public Result getMyComments() {
@@ -22,6 +26,10 @@ public class BlogCommentsController {
 
     @PostMapping
     public Result saveComment(@RequestBody BlogComments comment) {
+        Long userId = UserHolder.getUser().getId();
+        if (!Boolean.TRUE.equals(stringRedisTemplate.opsForSet().isMember("whitelist:post", userId.toString()))) {
+            return Result.fail("暂无发布权限");
+        }
         return blogCommentsService.saveComment(comment);
     }
 

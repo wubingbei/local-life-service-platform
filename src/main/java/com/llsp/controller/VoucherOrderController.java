@@ -1,5 +1,6 @@
 package com.llsp.controller;
 
+import com.llsp.annotation.RateLimit;
 import com.llsp.dto.Result;
 import com.llsp.service.IVoucherOrderService;
 import org.springframework.web.bind.annotation.*;
@@ -14,6 +15,7 @@ public class VoucherOrderController {
     @Resource
     private IVoucherOrderService voucherOrderService;
 
+    @RateLimit(rate = 100, message = "活动太火爆了，请稍后再试！")
     @PostMapping("seckill/{id}")
     public Result seckillVoucher(@PathVariable("id") Long voucherId) {
         return voucherOrderService.seckillVoucher(voucherId);

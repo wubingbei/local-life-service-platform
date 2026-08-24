@@ -42,6 +42,8 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
     @Resource
     private RabbitTemplate rabbitTemplate;
     @Resource
+    private OutboxRelayService outboxRelayService;
+    @Resource
     private IShopService shopService;
 
     // DefaultRedisScript<Long>: Spring提供的封装类，用来代表一个Lua脚本，指定脚本执行后返回的结果类型是Long
@@ -88,8 +90,9 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
         voucherOrder.setId(orderId);
         voucherOrder.setUserId(userId);
         voucherOrder.setVoucherId(voucherId);
-        // 把订单放入消息队列
-        rabbitTemplate.convertAndSend("seckill.topic", "seckill.success", voucherOrder);
+        // 把订单放入消息队列（Outbox 可靠投递）
+        outboxRelayService.sendWithOutbox("seckill.topic", "seckill.success",
+                voucherOrder, orderId);
         // 返回订单id
         return Result.ok(orderId);
     }

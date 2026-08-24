@@ -16,6 +16,7 @@
     <properties>
         <java.version>17</java.version>
         <spring-ai.version>1.1.5</spring-ai.version>
+        <logback.version>1.4.14</logback.version>
     </properties>
     <dependencies>
         <dependency>
@@ -81,6 +82,12 @@
             <groupId>com.aliyun.oss</groupId>
             <artifactId>aliyun-sdk-oss</artifactId>
             <version>3.17.4</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>commons-logging</groupId>
+                    <artifactId>commons-logging</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <!--BCrypt 密码加密-->
         <dependency>
@@ -92,6 +99,11 @@
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-starter-model-openai</artifactId>
             <version>${spring-ai.version}</version>
+        </dependency>
+        <!-- 显式声明 Logback，确保 core 和 classic 版本一致，避免类加载冲突 -->
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
         </dependency>
     </dependencies>
 

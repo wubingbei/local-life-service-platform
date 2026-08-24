@@ -44,8 +44,8 @@
         </div>
       </div>
     </div>
-    <!-- 还未加载关注列表 -->
-    <div class="follow-empty" v-if="followings.length === 0 && !followLoaded">
+    <!-- 还没有关注任何人 -->
+    <div class="follow-empty" v-if="followings.length === 0">
       <div class="empty-icon">👥</div>
       <div class="empty-text">关注你感兴趣的人</div>
       <div class="empty-sub">去看看发现页的精彩内容</div>
@@ -60,7 +60,7 @@
     <div class="waterfall" :class="'cols-' + columnCount">
       <div class="waterfall-col" v-for="(col, ci) in followColumns" :key="'fc'+ci">
         <div class="blog-box" v-for="b in col" :key="b.id" @click="toBlogDetail(b)" style="cursor:pointer">
-          <div class="blog-img" v-if="b.img"><img :src="b.img" alt=""></div>
+          <div class="blog-img" v-if="b.img"><img :src="b.img" alt="" @load="onBlogImgLoad(b, $event)"></div>
           <div class="blog-title">{{b.title}}</div>
           <div class="blog-foot">
             <div class="blog-user-icon"><img :src="b.icon || '/imgs/icons/default-icon.png'" alt=""></div>
@@ -90,7 +90,7 @@
     <div class="waterfall" :class="'cols-' + columnCount">
       <div class="waterfall-col" v-for="(col, ci) in discoverColumns" :key="'dc'+ci">
         <div class="blog-box" v-for="b in col" :key="b.id" @click="toBlogDetail(b)" style="cursor:pointer">
-          <div class="blog-img" v-if="b.img"><img :src="b.img" alt=""></div>
+          <div class="blog-img" v-if="b.img"><img :src="b.img" alt="" @load="onBlogImgLoad(b, $event)"></div>
           <div class="blog-title">{{b.title}}</div>
           <div class="blog-foot">
             <div class="blog-user-icon"><img :src="b.icon || '/imgs/icons/default-icon.png'" alt=""></div>
@@ -126,6 +126,7 @@
       types: [],          // 分类列表
       user: null,         // 登录用户（评论时检查）
       columnCount: 2,     // 瀑布流列数（响应式）
+      cardHeights: {},    // 瀑布流卡片高度缓存 { id: height }
       // 关注
       followings: [],     // 关注的人
       followBlogs: [],    // 关注人的笔记
@@ -161,10 +162,25 @@
       },
       distributeColumns(list) {
         const cols = Array.from({length: this.columnCount}, () => []);
-        list.forEach((item, i) => {
-          cols[i % this.columnCount].push(item);
+        const colHeights = Array(this.columnCount).fill(0);
+        const defaultH = 260; // 图片未加载时的预估高度
+        list.forEach(item => {
+          // 找当前最矮的列，把卡片放进去（真·瀑布流：按高度自适应）
+          let minIdx = 0;
+          for (let i = 1; i < colHeights.length; i++) {
+            if (colHeights[i] < colHeights[minIdx]) minIdx = i;
+          }
+          cols[minIdx].push(item);
+          colHeights[minIdx] += this.cardHeights[item.id] || defaultH;
         });
         return cols;
+      },
+      // 图片加载完成后，测量卡片实际高度并触发瀑布流重排
+      onBlogImgLoad(b, e) {
+        const box = e.target.closest('.blog-box');
+        if (box && box.offsetHeight) {
+          this.$set(this.cardHeights, b.id, box.offsetHeight);
+        }
       },
       switchTab(t) {
         this.activeTab = t;

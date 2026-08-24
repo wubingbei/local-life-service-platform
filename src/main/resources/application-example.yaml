@@ -17,9 +17,9 @@
 #   RABBITMQ_VHOST    - RabbitMQ 虚拟主机，默认 /
 #   RABBITMQ_USER     - RabbitMQ 用户名，默认 guest
 #   RABBITMQ_PASSWORD - RabbitMQ 密码，默认 guest
-#   QWEN_API_KEY      - 通义千问 API Key（必填）
+#   AI_API_KEY        - AI API Key（必填）
 #   AI_BASE_URL       - AI API 地址，默认阿里云 DashScope
-#   AI_MODEL          - AI 模型名，默认 qwen-plus-2025-07-28
+#   AI_MODEL          - AI 模型名，默认 qwen-plus
 #   UPLOAD_DIR        - 图片上传目录，默认 ./uploads/imgs
 #   --- 付费方案（不配也能跑）---
 #   OSS_ENDPOINT / OSS_ACCESS_KEY_ID / OSS_ACCESS_KEY_SECRET / OSS_BUCKET_NAME
@@ -32,7 +32,7 @@ spring:
     name: llsp
   ai:
     openai:
-      api-key: ${QWEN_API_KEY:your-api-key}
+      api-key: ${AI_API_KEY:your-api-key}
       base-url: ${AI_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode}
       chat:
         options:

@@ -47,6 +47,14 @@ public class ContentSecurityUtils {
     public static final int MAX_TITLE_LENGTH = 200;
 
     /**
+     * 清除干扰符号，统一文本用于敏感词匹配
+     */
+    private static String cleanSymbol(String text) {
+        // 移除常见分隔干扰符号：* # & | 空格 - _ 等
+        return text.replaceAll("[*#&|\\s\\-_、，。！？]", "");
+    }
+
+    /**
      * 检测内容是否安全
      * @param content 待检测的文本内容
      * @return null 表示通过检测，否则返回错误信息
@@ -75,7 +83,7 @@ public class ContentSecurityUtils {
         }
 
         // 3. 敏感词检测
-        String lower = content.toLowerCase();
+        String lower = cleanSymbol(content).toLowerCase();
         for (String word : SENSITIVE_WORDS) {
             if (lower.contains(word.toLowerCase())) {
                 return "内容包含违规词，请修改后重试";

@@ -1,92 +1,67 @@
 /*
- Navicat Premium Data Transfer
+ Navicat Premium Dump SQL
 
- Source Server         : local
+ Source Server         : Mysql
  Source Server Type    : MySQL
- Source Server Version : 50622
+ Source Server Version : 80034 (8.0.34)
  Source Host           : localhost:3306
  Source Schema         : llsp
 
  Target Server Type    : MySQL
- Target Server Version : 50622
+ Target Server Version : 80034 (8.0.34)
  File Encoding         : 65001
 
- Date: 14/03/2022 21:38:11
+ Date: 24/08/2026 17:33:35
 */
 
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
--- 会话表
-DROP TABLE IF EXISTS `tb_chat_session`;
-CREATE TABLE tb_chat_session (
-                                 id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
-                                 user_id BIGINT UNSIGNED NOT NULL COMMENT '用户id',
-                                 chat_id VARCHAR(64) NOT NULL COMMENT '会话唯一标识(UUID)',
-                                 title VARCHAR(128) DEFAULT '' COMMENT '会话标题(取首条用户消息前N字)',
-                                 message_count INT UNSIGNED DEFAULT 0 COMMENT '消息数量',
-                                 create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                                 update_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                                 PRIMARY KEY (id),
-                                 UNIQUE KEY uk_chat_id (chat_id),
-                                 KEY idx_user_id (user_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='AI聊天会话表';
 
--- 消息表
-DROP TABLE IF EXISTS `tb_chat_message`;
-CREATE TABLE tb_chat_message (
-                                 id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
-                                 chat_id VARCHAR(64) NOT NULL COMMENT '关联会话id',
-                                 user_id BIGINT UNSIGNED NOT NULL COMMENT '用户id(冗余,便于隔离查询)',
-                                 role VARCHAR(16) NOT NULL COMMENT '角色: user/assistant',
-                                 content TEXT NOT NULL COMMENT '消息内容',
-                                 create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                                 PRIMARY KEY (id),
-                                 KEY idx_chat_id (chat_id),
-                                 KEY idx_user_id (user_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='AI聊天消息表';
 -- ----------------------------
 -- Table structure for tb_blog
 -- ----------------------------
 DROP TABLE IF EXISTS `tb_blog`;
 CREATE TABLE `tb_blog`  (
-  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
-  `shop_id` bigint(20) NOT NULL COMMENT '商户id',
-  `user_id` bigint(20) UNSIGNED NOT NULL COMMENT '用户id',
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `shop_id` bigint NOT NULL COMMENT '商户id',
+  `user_id` bigint UNSIGNED NOT NULL COMMENT '用户id',
   `title` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '标题',
   `images` varchar(2048) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '探店的照片，最多9张，多张以\",\"隔开',
   `content` varchar(2048) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '探店的文字描述',
-  `liked` int(8) UNSIGNED NULL DEFAULT 0 COMMENT '点赞数量',
-  `comments` int(8) UNSIGNED NULL DEFAULT NULL COMMENT '评论数量',
+  `liked` int UNSIGNED NULL DEFAULT 0 COMMENT '点赞数量',
+  `comments` int UNSIGNED NULL DEFAULT NULL COMMENT '评论数量',
   `create_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 23 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Compact;
+) ENGINE = InnoDB AUTO_INCREMENT = 31 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = COMPACT;
 
 -- ----------------------------
 -- Records of tb_blog
 -- ----------------------------
-INSERT INTO `tb_blog` VALUES (4, 4, 2, '无尽浪漫的夜晚丨在万花丛中摇晃着红酒杯🍷品战斧牛排🥩', '/imgs/blogs/7/14/4771fefb-1a87-4252-816c-9f7ec41ffa4a.jpg,/imgs/blogs/4/10/2f07e3c9-ddce-482d-9ea7-c21450f8d7cd.jpg,/imgs/blogs/2/6/b0756279-65da-4f2d-b62a-33f74b06454a.jpg,/imgs/blogs/10/7/7e97f47d-eb49-4dc9-a583-95faa7aed287.jpg,/imgs/blogs/1/2/4a7b496b-2a08-4af7-aa95-df2c3bd0ef97.jpg,/imgs/blogs/14/3/52b290eb-8b5d-403b-8373-ba0bb856d18e.jpg', '生活就是一半烟火·一半诗意<br/>手执烟火谋生活·心怀诗意以谋爱·<br/>当然<br/>\r\n男朋友给不了的浪漫要学会自己给🍒<br/>\n无法重来的一生·尽量快乐.<br/><br/>🏰「小筑里·神秘浪漫花园餐厅」🏰<br/><br/>\n💯这是一家最最最美花园的西餐厅·到处都是花餐桌上是花前台是花  美好无处不在\n品一口葡萄酒，维亚红酒马瑟兰·微醺上头工作的疲惫消失无际·生如此多娇🍃<br/><br/>📍地址:延安路200号(家乐福面)<br/><br/>🚌交通:地铁①号线定安路B口出右转过下通道右转就到啦～<br/><br/>--------------🥣菜品详情🥣---------------<br/><br/>「战斧牛排]<br/>\n超大一块战斧牛排经过火焰的炙烤发出阵阵香，外焦里嫩让人垂涎欲滴，切开牛排的那一刻，牛排的汁水顺势流了出来，分熟的牛排肉质软，简直细嫩到犯规，一刻都等不了要放入嘴里咀嚼～<br/><br/>「奶油培根意面」<br/>太太太好吃了💯<br/>我真的无法形容它的美妙，意面混合奶油香菇的香味真的太太太香了，我真的舔盘了，一丁点美味都不想浪费‼️<br/><br/><br/>「香菜汁烤鲈鱼」<br/>这个酱是辣的 真的绝好吃‼️<br/>鲈鱼本身就很嫩没什么刺，烤过之后外皮酥酥的，鱼肉蘸上酱料根本停不下来啊啊啊啊<br/>能吃辣椒的小伙伴一定要尝尝<br/><br/>非常可 好吃子🍽\n<br/>--------------🍃个人感受🍃---------------<br/><br/>【👩🏻‍🍳服务】<br/>小姐姐特别耐心的给我们介绍彩票 <br/>推荐特色菜品，拍照需要帮忙也是尽心尽力配合，太爱他们了<br/><br/>【🍃环境】<br/>比较有格调的西餐厅 整个餐厅的布局可称得上的万花丛生 有种在人间仙境的感觉🌸<br/>集美食美酒与鲜花为一体的风格店铺 令人向往<br/>烟火皆是生活 人间皆是浪漫<br/>', 1, 104, '2021-12-28 19:50:01', '2022-03-10 14:26:34');
+INSERT INTO `tb_blog` VALUES (4, 4, 2, '无尽浪漫的夜晚丨在万花丛中摇晃着红酒杯🍷品战斧牛排🥩', '/imgs/blogs/7/14/4771fefb-1a87-4252-816c-9f7ec41ffa4a.jpg,/imgs/blogs/4/10/2f07e3c9-ddce-482d-9ea7-c21450f8d7cd.jpg,/imgs/blogs/2/6/b0756279-65da-4f2d-b62a-33f74b06454a.jpg,/imgs/blogs/10/7/7e97f47d-eb49-4dc9-a583-95faa7aed287.jpg,/imgs/blogs/1/2/4a7b496b-2a08-4af7-aa95-df2c3bd0ef97.jpg,/imgs/blogs/14/3/52b290eb-8b5d-403b-8373-ba0bb856d18e.jpg', '生活就是一半烟火·一半诗意<br/>手执烟火谋生活·心怀诗意以谋爱·<br/>当然<br/>\r\n男朋友给不了的浪漫要学会自己给🍒<br/>\n无法重来的一生·尽量快乐.<br/><br/>🏰「小筑里·神秘浪漫花园餐厅」🏰<br/><br/>\n💯这是一家最最最美花园的西餐厅·到处都是花餐桌上是花前台是花  美好无处不在\n品一口葡萄酒，维亚红酒马瑟兰·微醺上头工作的疲惫消失无际·生如此多娇🍃<br/><br/>📍地址:延安路200号(家乐福面)<br/><br/>🚌交通:地铁①号线定安路B口出右转过下通道右转就到啦～<br/><br/>--------------🥣菜品详情🥣---------------<br/><br/>「战斧牛排]<br/>\n超大一块战斧牛排经过火焰的炙烤发出阵阵香，外焦里嫩让人垂涎欲滴，切开牛排的那一刻，牛排的汁水顺势流了出来，分熟的牛排肉质软，简直细嫩到犯规，一刻都等不了要放入嘴里咀嚼～<br/><br/>「奶油培根意面」<br/>太太太好吃了💯<br/>我真的无法形容它的美妙，意面混合奶油香菇的香味真的太太太香了，我真的舔盘了，一丁点美味都不想浪费‼️<br/><br/><br/>「香菜汁烤鲈鱼」<br/>这个酱是辣的 真的绝好吃‼️<br/>鲈鱼本身就很嫩没什么刺，烤过之后外皮酥酥的，鱼肉蘸上酱料根本停不下来啊啊啊啊<br/>能吃辣椒的小伙伴一定要尝尝<br/><br/>非常可 好吃子🍽\n<br/>--------------🍃个人感受🍃---------------<br/><br/>【👩🏻‍🍳服务】<br/>小姐姐特别耐心的给我们介绍彩票 <br/>推荐特色菜品，拍照需要帮忙也是尽心尽力配合，太爱他们了<br/><br/>【🍃环境】<br/>比较有格调的西餐厅 整个餐厅的布局可称得上的万花丛生 有种在人间仙境的感觉🌸<br/>集美食美酒与鲜花为一体的风格店铺 令人向往<br/>烟火皆是生活 人间皆是浪漫<br/>', 1, 105, '2021-12-28 19:50:01', '2026-06-05 16:19:28');
 INSERT INTO `tb_blog` VALUES (5, 1, 2, '人均30💰杭州这家港式茶餐厅我疯狂打call‼️', '/imgs/blogs/4/7/863cc302-d150-420d-a596-b16e9232a1a6.jpg,/imgs/blogs/11/12/8b37d208-9414-4e78-b065-9199647bb3e3.jpg,/imgs/blogs/4/1/fa74a6d6-3026-4cb7-b0b6-35abb1e52d11.jpg,/imgs/blogs/9/12/ac2ce2fb-0605-4f14-82cc-c962b8c86688.jpg,/imgs/blogs/4/0/26a7cd7e-6320-432c-a0b4-1b7418f45ec7.jpg,/imgs/blogs/15/9/cea51d9b-ac15-49f6-b9f1-9cf81e9b9c85.jpg', '又吃到一家好吃的茶餐厅🍴环境是怀旧tvb港风📺边吃边拍照片📷几十种菜品均价都在20+💰可以是很平价了！<br>·<br>店名：九记冰厅(远洋店)<br>地址：杭州市丽水路远洋乐堤港负一楼（溜冰场旁边）<br>·<br>✔️黯然销魂饭（38💰）<br>这碗饭我吹爆！米饭上盖满了甜甜的叉烧 还有两颗溏心蛋🍳每一粒米饭都裹着浓郁的酱汁 光盘了<br>·<br>✔️铜锣湾漏奶华（28💰）<br>黄油吐司烤的脆脆的 上面洒满了可可粉🍫一刀切开 奶盖流心像瀑布一样流出来  满足<br>·<br>✔️神仙一口西多士士（16💰）<br>简简单单却超级好吃！西多士烤的很脆 黄油味浓郁 面包体超级柔软 上面淋了炼乳<br>·<br>✔️怀旧五柳炸蛋饭（28💰）<br>四个鸡蛋炸成蓬松的炸蛋！也太好吃了吧！还有大块鸡排 上淋了酸甜的酱汁 太合我胃口了！！<br>·<br>✔️烧味双拼例牌（66💰）<br>选了烧鹅➕叉烧 他家烧腊品质真的惊艳到我！据说是每日广州发货 到店现烧现卖的黑棕鹅 每口都是正宗的味道！肉质很嫩 皮超级超级酥脆！一口爆油！叉烧肉也一点都不柴 甜甜的很入味 搭配梅子酱很解腻 ！<br>·<br>✔️红烧脆皮乳鸽（18.8💰）<br>乳鸽很大只 这个价格也太划算了吧， 肉质很有嚼劲 脆皮很酥 越吃越香～<br>·<br>✔️大满足小吃拼盘（25💰）<br>翅尖➕咖喱鱼蛋➕蝴蝶虾➕盐酥鸡<br>zui喜欢里面的咖喱鱼！咖喱酱香甜浓郁！鱼蛋很q弹～<br>·<br>✔️港式熊仔丝袜奶茶（19💰）<br>小熊🐻造型的奶茶冰也太可爱了！颜值担当 很地道的丝袜奶茶 茶味特别浓郁～<br>·', 1, 0, '2021-12-28 20:57:49', '2022-03-10 09:21:39');
-INSERT INTO `tb_blog` VALUES (6, 10, 1, '杭州周末好去处｜💰50就可以骑马啦🐎', '/imgs/blogs/blog1.jpg', '杭州周末好去处｜💰50就可以骑马啦🐎', 1, 0, '2022-01-11 16:05:47', '2022-03-10 09:21:41');
 INSERT INTO `tb_blog` VALUES (7, 10, 1, '杭州周末好去处｜💰50就可以骑马啦🐎', '/imgs/blogs/blog1.jpg', '杭州周末好去处｜💰50就可以骑马啦🐎', 1, 0, '2022-01-11 16:05:47', '2022-03-10 09:21:42');
+INSERT INTO `tb_blog` VALUES (26, 103, 1012, '我是帅逼', '', '如题', 0, NULL, '2026-06-08 20:34:23', '2026-06-19 20:07:21');
+INSERT INTO `tb_blog` VALUES (29, 1, 1010, '1', '/imgs/blogs/13/6/c3b054a7-ef9e-49b6-80eb-dd7ce6954c83.jpg', '1', 0, NULL, '2026-06-08 23:59:29', '2026-06-08 23:59:29');
+INSERT INTO `tb_blog` VALUES (30, 3, 1010, '今日爱国主义教育', '/imgs/blogs/8/15/026642c7-4ddf-4d41-af05-711f3bd40896.jpg', '如图', 1, NULL, '2026-06-17 22:10:41', '2026-06-17 22:27:18');
 
 -- ----------------------------
 -- Table structure for tb_blog_comments
 -- ----------------------------
 DROP TABLE IF EXISTS `tb_blog_comments`;
 CREATE TABLE `tb_blog_comments`  (
-  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
-  `user_id` bigint(20) UNSIGNED NOT NULL COMMENT '用户id',
-  `blog_id` bigint(20) UNSIGNED NOT NULL COMMENT '探店id',
-  `parent_id` bigint(20) UNSIGNED NOT NULL COMMENT '关联的1级评论id，如果是一级评论，则值为0',
-  `answer_id` bigint(20) UNSIGNED NOT NULL COMMENT '回复的评论id',
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `user_id` bigint UNSIGNED NOT NULL COMMENT '用户id',
+  `blog_id` bigint UNSIGNED NOT NULL COMMENT '探店id',
+  `parent_id` bigint UNSIGNED NOT NULL COMMENT '关联的1级评论id，如果是一级评论，则值为0',
+  `answer_id` bigint UNSIGNED NOT NULL COMMENT '回复的评论id',
   `content` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '回复的内容',
-  `liked` int(8) UNSIGNED NULL DEFAULT NULL COMMENT '点赞数',
-  `status` tinyint(1) UNSIGNED NULL DEFAULT NULL COMMENT '状态，0：正常，1：被举报，2：禁止查看',
+  `liked` int UNSIGNED NULL DEFAULT NULL COMMENT '点赞数',
+  `status` tinyint UNSIGNED NULL DEFAULT NULL COMMENT '状态，0：正常，1：被举报，2：禁止查看',
   `create_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Compact;
+) ENGINE = InnoDB AUTO_INCREMENT = 30 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = COMPACT;
 
 -- ----------------------------
 -- Records of tb_blog_comments
@@ -98,82 +73,158 @@ INSERT INTO `tb_blog_comments` VALUES (4, 1, 5, 0, 0, '我也想过这样的生�
 INSERT INTO `tb_blog_comments` VALUES (5, 5, 6, 0, 0, '50元真的太划算了！周末就去打卡', 6, 0, '2026-01-05 11:30:00', '2026-01-05 11:30:00');
 INSERT INTO `tb_blog_comments` VALUES (6, 2, 6, 0, 0, '拍的照片好有感觉，什么相机拍的？', 3, 0, '2026-01-06 08:00:00', '2026-01-06 08:00:00');
 INSERT INTO `tb_blog_comments` VALUES (7, 1, 6, 0, 0, '上周末刚去回来，强烈推荐！', 15, 0, '2026-01-08 20:10:00', '2026-01-08 20:10:00');
+INSERT INTO `tb_blog_comments` VALUES (9, 1010, 4, 0, 0, '不错', 0, 0, '2026-06-05 16:19:28', '2026-06-05 16:19:28');
+INSERT INTO `tb_blog_comments` VALUES (10, 2, 4, 0, 0, '太浪漫了！这家店真的很适合拍照', 15, 0, '2025-12-16 10:00:00', '2026-06-05 19:56:42');
+INSERT INTO `tb_blog_comments` VALUES (11, 5, 4, 0, 0, '我也想去！周末约起~', 8, 0, '2025-12-16 11:30:00', '2026-06-05 19:56:42');
+INSERT INTO `tb_blog_comments` VALUES (12, 10, 4, 0, 0, '地址看起来很方便，下次一定去', 5, 0, '2025-12-16 14:00:00', '2026-06-05 19:56:42');
+INSERT INTO `tb_blog_comments` VALUES (13, 1, 4, 0, 0, '战斧牛排看起来太诱人了！', 12, 0, '2025-12-17 09:00:00', '2026-06-05 19:56:42');
+INSERT INTO `tb_blog_comments` VALUES (14, 5, 5, 0, 0, '这家茶餐厅我去过，真的很平价！', 20, 0, '2025-12-21 10:00:00', '2026-06-05 19:56:42');
+INSERT INTO `tb_blog_comments` VALUES (15, 10, 5, 0, 0, '漏奶华听起来就很好吃的样子', 18, 0, '2025-12-21 11:00:00', '2026-06-05 19:56:42');
+INSERT INTO `tb_blog_comments` VALUES (16, 1, 5, 0, 0, '价格对学生党太友好了', 10, 0, '2025-12-21 14:00:00', '2026-06-05 19:56:42');
+INSERT INTO `tb_blog_comments` VALUES (17, 2, 6, 0, 0, '骑马好酷啊！在哪里骑的？', 8, 0, '2026-01-07 09:00:00', '2026-06-05 19:56:42');
+INSERT INTO `tb_blog_comments` VALUES (18, 5, 6, 0, 0, '50块就能骑马，太划算了！', 12, 0, '2026-01-07 10:00:00', '2026-06-05 19:56:42');
+INSERT INTO `tb_blog_comments` VALUES (19, 10, 6, 0, 0, '周末正好可以去放松一下', 6, 0, '2026-01-07 15:00:00', '2026-06-05 19:56:42');
 
 -- ----------------------------
--- Table structure for tb_shop_comments
+-- Table structure for tb_chat_message
 -- ----------------------------
-DROP TABLE IF EXISTS `tb_shop_comments`;
-CREATE TABLE `tb_shop_comments`  (
-  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
-  `shop_id` bigint(20) UNSIGNED NOT NULL COMMENT '商户id',
-  `user_id` bigint(20) UNSIGNED NOT NULL COMMENT '用户id',
-  `content` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '评论内容',
-  `create_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Compact;
+DROP TABLE IF EXISTS `tb_chat_message`;
+CREATE TABLE `tb_chat_message`  (
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `chat_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '关联会话id',
+  `user_id` bigint UNSIGNED NOT NULL COMMENT '用户id(冗余,便于隔离查询)',
+  `role` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '角色: user/assistant',
+  `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '消息内容',
+  `create_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_chat_id`(`chat_id` ASC) USING BTREE,
+  INDEX `idx_user_id`(`user_id` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 5 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'AI聊天消息表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of tb_chat_message
+-- ----------------------------
+INSERT INTO `tb_chat_message` VALUES (1, 'e37734bfe06d4168877297d3697230ae', 1010, 'user', '帮我找一些华农校内食堂', '2026-06-17 21:49:34');
+INSERT INTO `tb_chat_message` VALUES (2, 'e37734bfe06d4168877297d3697230ae', 1010, 'assistant', '小评来啦！👋 高兴为您服务~\n\n想帮您找华农校内的食堂呢！不过我需要先温柔地确认一下：\n1. 您想找的是哪种类型的餐饮呢？比如是正餐食堂、小吃窗口，还是有其他特别需求？\n2. 您是在华南农业大学的哪个校区呢？因为不同校区的食堂分布可能会不一样哦~\n\n等您告诉我这些信息后，我就马上为您查找合适的食堂推荐！(•̀ᴗ•́)و', '2026-06-17 21:49:38');
+INSERT INTO `tb_chat_message` VALUES (3, 'e37734bfe06d4168877297d3697230ae', 1010, 'user', '华农里的就行，类型不限', '2026-06-17 21:50:00');
+INSERT INTO `tb_chat_message` VALUES (4, 'e37734bfe06d4168877297d3697230ae', 1010, 'assistant', '哇！小评找到啦！🎉 为您精心挑选了华南农业大学及周边超赞的美食食堂和餐饮店，快来看看有没有您喜欢的吧~\n\n| 商铺名称 | 地址和商圈 | 评分 | 人均消费 | 销量 |\n|---------|-----------|------|--------|-----|\n| 华农大饭堂 | 广州市天河区华南农业大学内 | ⭐⭐⭐⭐☆ (4.5) | ¥20 | 15,234单 |\n| 华农酸奶店 | 广州市天河区华南农业大学校内 | ⭐⭐⭐⭐✨ (4.8) | ¥25 | 891单 |\n| 茶理宜世 | 广州市天河区五山路华南农业大学西门 | ⭐⭐⭐⭐☆ (4.6) | ¥22 | 2,156单 |\n| 潮汕牛肉火锅 | 广州市天河区华南农业大学东门 | ⭐⭐⭐⭐✨ (4.8) | ¥75 | 1,823单 |\n| 一点点奶茶 | 广州市天河区华南农业大学南门 | ⭐⭐⭐⭐☆ (4.6) | ¥18 | 3,567单 |\n| 湘菜馆 | 广州市天河区华南农业大学北门 | ⭐⭐⭐⭐☆ (4.7) | ¥55 | 987单 |\n| 麻辣烫 | 广州市天河区华南农业大学后街 | ⭐⭐⭐⭐ (4.4) | ¥30 | 2,345单 |\n| 粤式早茶 | 广州市天河区华南农业大学南门外 | ⭐⭐⭐⭐✨ (4.8) | ¥60 | 1,678单 |\n\n这些可都是华农师生们的心头好呢！特别是**华农大饭堂**，销量超高，绝对是学生党最爱~ 🍚\n\n要是想了解某个店铺的优惠券或者探店笔记，随时告诉我哦！(•̀ᴗ•́)و', '2026-06-17 21:50:14');
+
+-- ----------------------------
+-- Table structure for tb_chat_session
+-- ----------------------------
+DROP TABLE IF EXISTS `tb_chat_session`;
+CREATE TABLE `tb_chat_session`  (
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `user_id` bigint UNSIGNED NOT NULL COMMENT '用户id',
+  `chat_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '会话唯一标识(UUID)',
+  `title` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '会话标题(取首条用户消息前N字)',
+  `message_count` int UNSIGNED NULL DEFAULT 0 COMMENT '消息数量',
+  `create_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `update_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_chat_id`(`chat_id` ASC) USING BTREE,
+  INDEX `idx_user_id`(`user_id` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'AI聊天会话表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of tb_chat_session
+-- ----------------------------
+INSERT INTO `tb_chat_session` VALUES (1, 1010, 'e37734bfe06d4168877297d3697230ae', '帮我找一些华农校内食堂', 4, '2026-06-17 21:41:59', '2026-06-17 21:50:14');
+INSERT INTO `tb_chat_session` VALUES (2, 1010, '75c28f48269a4c61a9094e1d5b7c6924', '', 0, '2026-06-17 22:27:09', '2026-06-17 22:27:09');
+INSERT INTO `tb_chat_session` VALUES (3, 10, 'ec4436fd9fc145408aae74556f58a52e', '', 0, '2026-06-19 20:54:06', '2026-06-19 20:54:06');
 
 -- ----------------------------
 -- Table structure for tb_follow
 -- ----------------------------
 DROP TABLE IF EXISTS `tb_follow`;
 CREATE TABLE `tb_follow`  (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
-  `user_id` bigint(20) UNSIGNED NOT NULL COMMENT '用户id',
-  `follow_user_id` bigint(20) UNSIGNED NOT NULL COMMENT '关联的用户id',
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `user_id` bigint UNSIGNED NOT NULL COMMENT '用户id',
+  `follow_user_id` bigint UNSIGNED NOT NULL COMMENT '关联的用户id',
   `create_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Compact;
+) ENGINE = InnoDB AUTO_INCREMENT = 11 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = COMPACT;
 
 -- ----------------------------
 -- Records of tb_follow
 -- ----------------------------
-INSERT INTO `tb_follow` VALUES (1, 1010, 2, '2026-03-26 22:19:39');
 INSERT INTO `tb_follow` VALUES (2, 1, 2, '2026-03-26 22:20:46');
 INSERT INTO `tb_follow` VALUES (3, 1, 1010, '2026-03-26 23:12:11');
 INSERT INTO `tb_follow` VALUES (4, 1010, 1, '2026-06-01 18:04:10');
+INSERT INTO `tb_follow` VALUES (6, 1010, 1011, '2026-06-09 14:59:12');
+INSERT INTO `tb_follow` VALUES (7, 1010, 1011, '2026-06-09 14:59:13');
+INSERT INTO `tb_follow` VALUES (10, 1010, 2, '2026-06-09 15:08:11');
+
+-- ----------------------------
+-- Table structure for tb_outbox_message
+-- ----------------------------
+DROP TABLE IF EXISTS `tb_outbox_message`;
+CREATE TABLE `tb_outbox_message`  (
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `message_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '消息唯一标识(UUID)，幂等去重',
+  `exchange` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT 'RabbitMQ 交换机名称',
+  `routing_key` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT 'RabbitMQ 路由键',
+  `payload` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '消息体(JSON格式)',
+  `status` tinyint NOT NULL DEFAULT 0 COMMENT '状态: 0-待发送, 1-已发送, 2-发送失败',
+  `retry_count` int NOT NULL DEFAULT 0 COMMENT '已重试次数',
+  `max_retries` int NOT NULL DEFAULT 10 COMMENT '最大重试次数',
+  `next_retry_time` datetime NULL DEFAULT NULL COMMENT '下次重试时间(指数退避)',
+  `last_error` varchar(1024) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '最后一次错误信息',
+  `order_id` bigint NULL DEFAULT NULL COMMENT '关联的订单ID(便于对账)',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_message_id`(`message_id` ASC) USING BTREE,
+  INDEX `idx_status_retry`(`status` ASC, `next_retry_time` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '本地消息表(Outbox Pattern)' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of tb_outbox_message
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for tb_seckill_voucher
 -- ----------------------------
 DROP TABLE IF EXISTS `tb_seckill_voucher`;
 CREATE TABLE `tb_seckill_voucher`  (
-  `voucher_id` bigint(20) UNSIGNED NOT NULL COMMENT '关联的优惠券的id',
-  `stock` int(8) NOT NULL COMMENT '库存',
+  `voucher_id` bigint UNSIGNED NOT NULL COMMENT '关联的优惠券的id',
+  `stock` int NOT NULL COMMENT '库存',
   `create_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `begin_time` timestamp NULL DEFAULT NULL COMMENT '生效时间',
   `end_time` timestamp NULL DEFAULT NULL COMMENT '失效时间',
   `update_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`voucher_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '秒杀优惠券表，与优惠券是一对一关系' ROW_FORMAT = Compact;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '秒杀优惠券表，与优惠券是一对一关系' ROW_FORMAT = COMPACT;
 
 -- ----------------------------
 -- Records of tb_seckill_voucher
 -- ----------------------------
 INSERT INTO `tb_seckill_voucher` VALUES (10, 10, '2026-03-12 18:03:03', '2026-04-11 10:09:17', '2026-05-26 23:09:04', '2026-05-09 18:09:08');
 INSERT INTO `tb_seckill_voucher` VALUES (11, 0, '2026-05-09 22:54:58', '2026-04-26 10:09:17', '2026-05-26 23:09:04', '2026-05-09 23:11:09');
+INSERT INTO `tb_seckill_voucher` VALUES (12, 99, '2026-06-05 14:28:49', '2026-05-26 10:09:17', '2026-07-26 14:09:04', '2026-06-05 14:41:21');
 
 -- ----------------------------
 -- Table structure for tb_shop
 -- ----------------------------
 DROP TABLE IF EXISTS `tb_shop`;
 CREATE TABLE `tb_shop`  (
-  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
   `name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '商铺名称',
-  `type_id` bigint(20) UNSIGNED NOT NULL COMMENT '商铺类型的id',
+  `type_id` bigint UNSIGNED NOT NULL COMMENT '商铺类型的id',
   `images` varchar(1024) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '商铺图片，多个图片以\',\'隔开',
   `area` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '商圈，例如陆家嘴',
   `address` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '地址',
   `x` double UNSIGNED NOT NULL COMMENT '经度',
   `y` double UNSIGNED NOT NULL COMMENT '维度',
-  `avg_price` bigint(10) UNSIGNED NULL DEFAULT NULL COMMENT '均价，取整数',
+  `avg_price` bigint UNSIGNED NULL DEFAULT NULL COMMENT '均价，取整数',
   `sold` int(10) UNSIGNED ZEROFILL NOT NULL COMMENT '销量',
   `score` int(2) UNSIGNED ZEROFILL NOT NULL COMMENT '评分，1~5分，乘10保存，避免小数',
   `open_hours` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '营业时间，例如 10:00-22:00',
   `create_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
-  INDEX `foreign_key_type`(`type_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 15 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Compact;
+  INDEX `foreign_key_type`(`type_id` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 112 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = COMPACT;
 
 -- ----------------------------
 -- Records of tb_shop
@@ -192,20 +243,120 @@ INSERT INTO `tb_shop` VALUES (11, 'INLOVE KTV(水晶城店)', 2, 'https://p0.mei
 INSERT INTO `tb_shop` VALUES (12, '魅(杭州远洋乐堤港店)', 2, 'https://p0.meituan.net/dpmerchantpic/63833f6ba0393e2e8722420ef33f3d40466664.jpg,https://p0.meituan.net/dpmerchantpic/ae3c94cc92c529c4b1d7f68cebed33fa105810.png,', '远洋乐堤港', '丽水路58号远洋乐堤港F4', 120.14983, 30.31211, 88, 0000006444, 46, '10:00-02:00', '2021-12-22 20:34:34', '2021-12-22 20:34:34');
 INSERT INTO `tb_shop` VALUES (13, '讴K拉量贩KTV(北城天地店)', 2, 'https://p1.meituan.net/merchantpic/598c83a8c0d06fe79ca01056e214d345875600.jpg,https://qcloud.dpfile.com/pc/HhvI0YyocYHRfGwJWqPQr34hRGRl4cWdvlNwn3dqghvi4WXlM2FY1te0-7pE3Wb9_Gd2X_f-v9T8Yj4uLt25Gg.jpg,https://qcloud.dpfile.com/pc/F5ZVzZaXFE27kvQzPnaL4V8O9QCpVw2nkzGrxZE8BqXgkfyTpNExfNG5CEPQX4pjGybIjx5eX6WNgCPvcASYAw.jpg', 'D32天阳购物中心', '湖州街567号北城天地5层', 120.130453, 30.327655, 58, 0000018997, 41, '12:00-02:00', '2021-12-22 20:38:54', '2021-12-22 20:40:04');
 INSERT INTO `tb_shop` VALUES (14, '星聚会KTV(拱墅区万达店)', 2, 'https://p0.meituan.net/dpmerchantpic/f4cd6d8d4eb1959c3ea826aa05a552c01840451.jpg,https://p0.meituan.net/dpmerchantpic/2efc07aed856a8ab0fc75c86f4b9b0061655777.jpg,https://qcloud.dpfile.com/pc/zWfzzIorCohKT0bFwsfAlHuayWjI6DBEMPHHncmz36EEMU9f48PuD9VxLLDAjdoU_Gd2X_f-v9T8Yj4uLt25Gg.jpg', '北部新城', '杭行路666号万达广场C座1-2F', 120.128958, 30.337252, 60, 0000017771, 47, '10:00-22:00', '2021-12-22 20:48:54', '2021-12-22 20:48:54');
+INSERT INTO `tb_shop` VALUES (100, '华农酸奶店', 1, 'https://img.xiachufang.com/2022/03/15/18/5f8e4a6e7a6b4e9e8f7e6d5c4b3a2112.jpg,https://img.xiachufang.com/2022/03/15/18/5f8e4a6e7a6b4e9e8f7e6d5c4b3a2113.jpg,https://img.xiachufang.com/2022/03/15/18/5f8e4a6e7a6b4e9e8f7e6d5c4b3a2114.jpg', '华南农业大学', '广州市天河区华南农业大学校内', 113.361, 23.16, 25, 0000000891, 48, '08:00-22:00', '2025-01-01 10:00:00', '2025-01-01 10:00:00');
+INSERT INTO `tb_shop` VALUES (101, '华农大饭堂', 1, 'https://img.xiachufang.com/2022/03/15/18/5f8e4a6e7a6b4e9e8f7e6d5c4b3a2115.jpg,https://img.xiachufang.com/2022/03/15/18/5f8e4a6e7a6b4e9e8f7e6d5c4b3a2116.jpg', '华南农业大学', '广州市天河区华南农业大学内', 113.362, 23.159, 20, 0000015234, 45, '06:30-21:00', '2025-01-01 10:00:00', '2025-01-01 10:00:00');
+INSERT INTO `tb_shop` VALUES (102, '茶理宜世', 1, 'https://img.xiachufang.com/2022/03/15/18/5f8e4a6e7a6b4e9e8f7e6d5c4b3a2117.jpg,https://img.xiachufang.com/2022/03/15/18/5f8e4a6e7a6b4e9e8f7e6d5c4b3a2118.jpg,https://img.xiachufang.com/2022/03/15/18/5f8e4a6e7a6b4e9e8f7e6d5c4b3a2119.jpg', '华南农业大学', '广州市天河区五山路华南农业大学西门', 113.358, 23.161, 22, 0000002156, 46, '10:00-22:00', '2025-01-01 10:00:00', '2025-01-01 10:00:00');
+INSERT INTO `tb_shop` VALUES (103, '麦当劳', 1, 'https://img.xiachufang.com/2022/03/15/18/5f8e4a6e7a6b4e9e8f7e6d5c4b3a2120.jpg,https://img.xiachufang.com/2022/03/15/18/5f8e4a6e7a6b4e9e8f7e6d5c4b3a2121.jpg', '五山', '广州市天河区五山路381号', 113.357, 23.162, 35, 0000004523, 47, '07:00-23:00', '2025-01-01 10:00:00', '2025-01-01 10:00:00');
+INSERT INTO `tb_shop` VALUES (104, '潮汕牛肉火锅', 1, 'https://img.xiachufang.com/2022/03/15/18/5f8e4a6e7a6b4e9e8f7e6d5c4b3a2122.jpg,https://img.xiachufang.com/2022/03/15/18/5f8e4a6e7a6b4e9e8f7e6d5c4b3a2123.jpg,https://img.xiachufang.com/2022/03/15/18/5f8e4a6e7a6b4e9e8f7e6d5c4b3a2124.jpg', '华南农业大学', '广州市天河区华南农业大学东门', 113.365, 23.158, 75, 0000001823, 48, '11:00-22:00', '2025-01-01 10:00:00', '2025-01-01 10:00:00');
+INSERT INTO `tb_shop` VALUES (105, '日式拉面屋', 1, 'https://img.xiachufang.com/2022/03/15/18/5f8e4a6e7a6b4e9e8f7e6d5c4b3a2125.jpg,https://img.xiachufang.com/2022/03/15/18/5f8e4a6e7a6b4e9e8f7e6d5c4b3a2126.jpg,https://img.xiachufang.com/2022/03/15/18/5f8e4a6e7a6b4e9e8f7e6d5c4b3a2127.jpg', '五山', '广州市天河区五山路389号', 113.356, 23.163, 45, 0000001234, 45, '11:00-21:30', '2025-01-01 10:00:00', '2025-01-01 10:00:00');
+INSERT INTO `tb_shop` VALUES (106, '一点点奶茶', 1, 'https://img.xiachufang.com/2022/03/15/18/5f8e4a6e7a6b4e9e8f7e6d5c4b3a2128.jpg,https://img.xiachufang.com/2022/03/15/18/5f8e4a6e7a6b4e9e8f7e6d5c4b3a2129.jpg', '华南农业大学', '广州市天河区华南农业大学南门', 113.36, 23.157, 18, 0000003567, 46, '10:00-22:00', '2025-01-01 10:00:00', '2025-01-01 10:00:00');
+INSERT INTO `tb_shop` VALUES (107, '湘菜馆', 1, 'https://img.xiachufang.com/2022/03/15/18/5f8e4a6e7a6b4e9e8f7e6d5c4b3a2130.jpg,https://img.xiachufang.com/2022/03/15/18/5f8e4a6e7a6b4e9e8f7e6d5c4b3a2131.jpg,https://img.xiachufang.com/2022/03/15/18/5f8e4a6e7a6b4e9e8f7e6d5c4b3a2132.jpg', '华南农业大学', '广州市天河区华南农业大学北门', 113.363, 23.165, 55, 0000000987, 47, '10:30-22:00', '2025-01-01 10:00:00', '2025-01-01 10:00:00');
+INSERT INTO `tb_shop` VALUES (108, '寿司小栈', 1, 'https://img.xiachufang.com/2022/03/15/18/5f8e4a6e7a6b4e9e8f7e6d5c4b3a2133.jpg,https://img.xiachufang.com/2022/03/15/18/5f8e4a6e7a6b4e9e8f7e6d5c4b3a2134.jpg,https://img.xiachufang.com/2022/03/15/18/5f8e4a6e7a6b4e9e8f7e6d5c4b3a2135.jpg', '五山', '广州市天河区五山路395号', 113.355, 23.164, 38, 0000000876, 45, '11:00-21:00', '2025-01-01 10:00:00', '2025-01-01 10:00:00');
+INSERT INTO `tb_shop` VALUES (109, '麻辣烫', 1, 'https://img.xiachufang.com/2022/03/15/18/5f8e4a6e7a6b4e9e8f7e6d5c4b3a2136.jpg,https://img.xiachufang.com/2022/03/15/18/5f8e4a6e7a6b4e9e8f7e6d5c4b3a2137.jpg,https://img.xiachufang.com/2022/03/15/18/5f8e4a6e7a6b4e9e8f7e6d5c4b3a2138.jpg', '华南农业大学', '广州市天河区华南农业大学后街', 113.366, 23.159, 30, 0000002345, 44, '10:00-23:00', '2025-01-01 10:00:00', '2025-01-01 10:00:00');
+INSERT INTO `tb_shop` VALUES (110, '粤式早茶', 1, 'https://img.xiachufang.com/2022/03/15/18/5f8e4a6e7a6b4e9e8f7e6d5c4b3a2139.jpg,https://img.xiachufang.com/2022/03/15/18/5f8e4a6e7a6b4e9e8f7e6d5c4b3a2140.jpg,https://img.xiachufang.com/2022/03/15/18/5f8e4a6e7a6b4e9e8f7e6d5c4b3a2141.jpg', '华南农业大学', '广州市天河区华南农业大学南门外', 113.359, 23.156, 60, 0000001678, 48, '07:00-14:00,17:00-21:00', '2025-01-01 10:00:00', '2025-01-01 10:00:00');
+
+-- ----------------------------
+-- Table structure for tb_shop_comments
+-- ----------------------------
+DROP TABLE IF EXISTS `tb_shop_comments`;
+CREATE TABLE `tb_shop_comments`  (
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `shop_id` bigint UNSIGNED NOT NULL COMMENT '商户id',
+  `user_id` bigint UNSIGNED NOT NULL COMMENT '用户id',
+  `content` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '评论内容',
+  `create_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 146 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = COMPACT;
+
+-- ----------------------------
+-- Records of tb_shop_comments
+-- ----------------------------
+INSERT INTO `tb_shop_comments` VALUES (3, 1, 1010, '牛逼', '2026-06-05 16:41:53');
+INSERT INTO `tb_shop_comments` VALUES (48, 1, 1, '这家茶餐厅的菠萝包很好吃，外酥里软。', '2025-02-10 08:30:00');
+INSERT INTO `tb_shop_comments` VALUES (49, 1, 2, '港式奶茶很正宗，茶味浓郁。', '2025-02-11 14:00:00');
+INSERT INTO `tb_shop_comments` VALUES (50, 1, 5, '位置很好找，就在街角。', '2025-02-12 12:00:00');
+INSERT INTO `tb_shop_comments` VALUES (51, 2, 1, '烤肉很好吃，腌制得很入味。', '2025-02-10 18:00:00');
+INSERT INTO `tb_shop_comments` VALUES (52, 2, 2, '铜锅涮羊肉很正宗，肉质新鲜。', '2025-02-11 19:00:00');
+INSERT INTO `tb_shop_comments` VALUES (53, 2, 5, '服务态度很好，会主动加水。', '2025-02-12 20:00:00');
+INSERT INTO `tb_shop_comments` VALUES (54, 3, 1, '新白鹿的糖醋排骨太好吃了！', '2025-02-10 12:00:00');
+INSERT INTO `tb_shop_comments` VALUES (55, 3, 2, '性价比超高，菜量足。', '2025-02-11 12:30:00');
+INSERT INTO `tb_shop_comments` VALUES (56, 3, 5, '装修风格很有特色，适合聚餐。', '2025-02-12 18:00:00');
+INSERT INTO `tb_shop_comments` VALUES (57, 4, 1, '环境很浪漫，适合情侣约会。', '2025-02-10 19:00:00');
+INSERT INTO `tb_shop_comments` VALUES (58, 4, 2, '西餐做得很精致，每道菜都是艺术品。', '2025-02-11 20:00:00');
+INSERT INTO `tb_shop_comments` VALUES (59, 4, 5, '价格偏高，但是品质对得起价格。', '2025-02-12 19:30:00');
+INSERT INTO `tb_shop_comments` VALUES (60, 5, 1, '海底捞的服务真的没话说，太贴心了！', '2025-02-10 18:30:00');
+INSERT INTO `tb_shop_comments` VALUES (61, 5, 2, '小零食和水果无限供应，很划算。', '2025-02-11 19:30:00');
+INSERT INTO `tb_shop_comments` VALUES (62, 5, 5, '等位的时候可以做美甲，很人性化。', '2025-02-12 20:30:00');
+INSERT INTO `tb_shop_comments` VALUES (63, 6, 1, '老北京涮锅很正宗，麻酱很香。', '2025-02-10 12:30:00');
+INSERT INTO `tb_shop_comments` VALUES (64, 6, 2, '羊肉卷很薄，涮几下就能吃。', '2025-02-11 18:30:00');
+INSERT INTO `tb_shop_comments` VALUES (65, 6, 5, '菜品新鲜，价格合理。', '2025-02-12 19:00:00');
+INSERT INTO `tb_shop_comments` VALUES (66, 7, 1, '烤鱼外焦里嫩，很入味。', '2025-02-10 18:00:00');
+INSERT INTO `tb_shop_comments` VALUES (67, 7, 2, '配菜很丰富，可以自己选择。', '2025-02-11 19:00:00');
+INSERT INTO `tb_shop_comments` VALUES (68, 7, 5, '环境不错，适合朋友聚会。', '2025-02-12 20:00:00');
+INSERT INTO `tb_shop_comments` VALUES (69, 8, 1, '寿司很新鲜，三文鱼很肥美。', '2025-02-10 12:00:00');
+INSERT INTO `tb_shop_comments` VALUES (70, 8, 2, '鳗鱼饭很好吃，酱汁浓郁。', '2025-02-11 12:30:00');
+INSERT INTO `tb_shop_comments` VALUES (71, 8, 5, '店面虽小但是很精致。', '2025-02-12 13:00:00');
+INSERT INTO `tb_shop_comments` VALUES (72, 9, 1, '羊蝎子很入味，越啃越香。', '2025-02-10 18:30:00');
+INSERT INTO `tb_shop_comments` VALUES (73, 9, 2, '锅底料很足，吃完还可以涮菜。', '2025-02-11 19:30:00');
+INSERT INTO `tb_shop_comments` VALUES (74, 9, 5, '分量很大，三个人吃不完。', '2025-02-12 20:30:00');
+INSERT INTO `tb_shop_comments` VALUES (75, 100, 1, '华农酸奶真的太好喝了！酸奶味道浓郁，价格实惠，每次来都要买好几瓶。', '2025-02-15 12:30:00');
+INSERT INTO `tb_shop_comments` VALUES (76, 100, 2, '强烈推荐这里的原味酸奶，酸酸甜甜的，很开胃！', '2025-02-16 14:20:00');
+INSERT INTO `tb_shop_comments` VALUES (77, 100, 5, '从小就喝华农酸奶，一如既往的好品质，支持！', '2025-02-17 16:45:00');
+INSERT INTO `tb_shop_comments` VALUES (78, 100, 10, '酸奶很新鲜，每次来华农都要带几瓶回去。', '2025-02-18 10:15:00');
+INSERT INTO `tb_shop_comments` VALUES (79, 101, 1, '饭堂的菜品种类很多，价格实惠，适合学生党。', '2025-02-15 12:00:00');
+INSERT INTO `tb_shop_comments` VALUES (80, 101, 2, '最喜欢三楼的麻辣香锅，味道很正宗！', '2025-02-16 18:30:00');
+INSERT INTO `tb_shop_comments` VALUES (81, 101, 5, '早餐的肠粉很好吃，每天早上都排队购买。', '2025-02-17 07:30:00');
+INSERT INTO `tb_shop_comments` VALUES (82, 101, 10, '环境干净整洁，工作人员服务态度好。', '2025-02-18 12:15:00');
+INSERT INTO `tb_shop_comments` VALUES (83, 102, 1, '奶茶味道很棒，特别喜欢他家的翠枝玉露。', '2025-02-15 15:00:00');
+INSERT INTO `tb_shop_comments` VALUES (84, 102, 2, '店里的装修很文艺，适合拍照打卡。', '2025-02-16 16:00:00');
+INSERT INTO `tb_shop_comments` VALUES (85, 102, 5, '价格有点小贵，但是品质对得起这个价格。', '2025-02-17 14:30:00');
+INSERT INTO `tb_shop_comments` VALUES (86, 102, 10, '每次来都要排队，建议提前下单。', '2025-02-18 17:45:00');
+INSERT INTO `tb_shop_comments` VALUES (87, 103, 1, '经典麦当劳，味道一如既往的稳定。', '2025-02-15 11:30:00');
+INSERT INTO `tb_shop_comments` VALUES (88, 103, 2, '麦旋风很好吃，巧克力味很浓！', '2025-02-16 13:00:00');
+INSERT INTO `tb_shop_comments` VALUES (89, 103, 5, '服务速度快，高峰期也不需要等太久。', '2025-02-17 19:00:00');
+INSERT INTO `tb_shop_comments` VALUES (90, 103, 10, '套餐性价比高，学生可以接受的价格。', '2025-02-18 12:30:00');
+INSERT INTO `tb_shop_comments` VALUES (91, 104, 1, '牛肉非常新鲜，涮几下就能吃，口感嫩滑。', '2025-02-15 18:00:00');
+INSERT INTO `tb_shop_comments` VALUES (92, 104, 2, '锅底很清淡，能吃出牛肉的原汁原味。', '2025-02-16 19:30:00');
+INSERT INTO `tb_shop_comments` VALUES (93, 104, 5, '老板是潮汕人，服务很热情，会推荐特色菜品。', '2025-02-17 20:00:00');
+INSERT INTO `tb_shop_comments` VALUES (94, 104, 10, '手打牛肉丸很Q弹，一口咬下去满满的牛肉香味。', '2025-02-18 18:45:00');
+INSERT INTO `tb_shop_comments` VALUES (95, 105, 1, '豚骨拉面汤底很浓郁，面条劲道有弹性。', '2025-02-15 12:30:00');
+INSERT INTO `tb_shop_comments` VALUES (96, 105, 2, '溏心蛋做得很好，蛋黄流心恰到好处。', '2025-02-16 13:30:00');
+INSERT INTO `tb_shop_comments` VALUES (97, 105, 5, '分量有点少，对于男生来说可能不够吃。', '2025-02-17 12:00:00');
+INSERT INTO `tb_shop_comments` VALUES (98, 105, 10, '装修风格很日式，有种置身日本的感觉。', '2025-02-18 13:15:00');
+INSERT INTO `tb_shop_comments` VALUES (99, 106, 1, '波霸奶茶很好喝，珍珠Q弹有嚼劲。', '2025-02-15 14:30:00');
+INSERT INTO `tb_shop_comments` VALUES (100, 106, 2, '四季春茶清爽不腻，适合夏天饮用。', '2025-02-16 15:00:00');
+INSERT INTO `tb_shop_comments` VALUES (101, 106, 5, '价格实惠，性价比超高！', '2025-02-17 16:00:00');
+INSERT INTO `tb_shop_comments` VALUES (102, 106, 10, '甜度刚刚好，不会太甜腻。', '2025-02-18 15:30:00');
+INSERT INTO `tb_shop_comments` VALUES (103, 107, 1, '剁椒鱼头很正宗，辣得恰到好处。', '2025-02-15 12:00:00');
+INSERT INTO `tb_shop_comments` VALUES (104, 107, 2, '农家小炒肉很香，下饭神器！', '2025-02-16 18:00:00');
+INSERT INTO `tb_shop_comments` VALUES (105, 107, 5, '正宗湘菜口味，辣得过瘾！', '2025-02-17 19:30:00');
+INSERT INTO `tb_shop_comments` VALUES (106, 107, 10, '价格实惠，分量十足。', '2025-02-18 12:00:00');
+INSERT INTO `tb_shop_comments` VALUES (107, 108, 1, '三文鱼刺身很新鲜，切片厚实。', '2025-02-15 12:30:00');
+INSERT INTO `tb_shop_comments` VALUES (108, 108, 2, '鳗鱼寿司烤得恰到好处，酱汁浓郁。', '2025-02-16 13:00:00');
+INSERT INTO `tb_shop_comments` VALUES (109, 108, 5, '店面虽然不大，但是很干净整洁。', '2025-02-17 12:30:00');
+INSERT INTO `tb_shop_comments` VALUES (110, 108, 10, '性价比很高，学生党也能接受。', '2025-02-18 13:00:00');
+INSERT INTO `tb_shop_comments` VALUES (111, 109, 1, '食材很新鲜，种类丰富多样。', '2025-02-15 18:00:00');
+INSERT INTO `tb_shop_comments` VALUES (112, 109, 2, '麻辣底料很香，辣度可以自己调节。', '2025-02-16 19:00:00');
+INSERT INTO `tb_shop_comments` VALUES (113, 109, 5, '适合一个人吃饭，想吃什么自己选。', '2025-02-17 20:00:00');
+INSERT INTO `tb_shop_comments` VALUES (114, 109, 10, '价格按称重算，比较合理。', '2025-02-18 18:30:00');
+INSERT INTO `tb_shop_comments` VALUES (115, 110, 1, '虾饺皮薄馅大，一口一个超级满足。', '2025-02-15 09:00:00');
+INSERT INTO `tb_shop_comments` VALUES (116, 110, 2, '凤爪蒸得很软烂，入口即化。', '2025-02-16 10:00:00');
+INSERT INTO `tb_shop_comments` VALUES (117, 110, 5, '蛋挞外酥里嫩，甜度刚刚好。', '2025-02-17 08:30:00');
+INSERT INTO `tb_shop_comments` VALUES (118, 110, 10, '环境舒适，很适合周末和家人一起喝早茶。', '2025-02-18 09:30:00');
 
 -- ----------------------------
 -- Table structure for tb_shop_type
 -- ----------------------------
 DROP TABLE IF EXISTS `tb_shop_type`;
 CREATE TABLE `tb_shop_type`  (
-  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
   `name` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '类型名称',
   `icon` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '图标',
-  `sort` int(3) UNSIGNED NULL DEFAULT NULL COMMENT '顺序',
+  `sort` int UNSIGNED NULL DEFAULT NULL COMMENT '顺序',
   `create_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 11 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Compact;
+) ENGINE = InnoDB AUTO_INCREMENT = 11 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = COMPACT;
 
 -- ----------------------------
 -- Records of tb_shop_type
@@ -226,14 +377,14 @@ INSERT INTO `tb_shop_type` VALUES (10, '美睫·美甲', '/types/mjmj.png', 4, '
 -- ----------------------------
 DROP TABLE IF EXISTS `tb_sign`;
 CREATE TABLE `tb_sign`  (
-  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
-  `user_id` bigint(20) UNSIGNED NOT NULL COMMENT '用户id',
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `user_id` bigint UNSIGNED NOT NULL COMMENT '用户id',
   `year` year NOT NULL COMMENT '签到的年',
-  `month` tinyint(2) NOT NULL COMMENT '签到的月',
+  `month` tinyint NOT NULL COMMENT '签到的月',
   `date` date NOT NULL COMMENT '签到的日期',
-  `is_backup` tinyint(1) UNSIGNED NULL DEFAULT NULL COMMENT '是否补签',
+  `is_backup` tinyint UNSIGNED NULL DEFAULT NULL COMMENT '是否补签',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Compact;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = COMPACT;
 
 -- ----------------------------
 -- Records of tb_sign
@@ -244,7 +395,7 @@ CREATE TABLE `tb_sign`  (
 -- ----------------------------
 DROP TABLE IF EXISTS `tb_user`;
 CREATE TABLE `tb_user`  (
-  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
   `phone` varchar(11) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '手机号码',
   `password` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '密码，加密存储',
   `nick_name` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '昵称，默认是用户id',
@@ -252,89 +403,97 @@ CREATE TABLE `tb_user`  (
   `create_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
-  UNIQUE INDEX `uniqe_key_phone`(`phone`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1010 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Compact;
+  UNIQUE INDEX `uniqe_key_phone`(`phone` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1014 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = COMPACT;
 
 -- ----------------------------
 -- Records of tb_user
 -- ----------------------------
-INSERT INTO `tb_user` VALUES (1, '13000000000', '', '小鱼同学', '/imgs/blogs/blog1.jpg', '2021-12-24 10:27:19', '2022-01-11 16:04:00');
-INSERT INTO `tb_user` VALUES (2, '13100000000', '', '可可今天不吃肉', '/imgs/icons/kkjtbcr.jpg', '2021-12-24 15:14:39', '2021-12-28 19:58:04');
-INSERT INTO `tb_user` VALUES (4, '14400000000', '', 'user_slxaxy2au9f3tanffaxr', '', '2022-01-07 12:07:53', '2022-01-07 12:07:53');
-INSERT INTO `tb_user` VALUES (5, '15100000000', '', '可爱多', '/imgs/icons/user5-icon.png', '2022-01-07 16:11:33', '2022-03-11 09:09:20');
-INSERT INTO `tb_user` VALUES (6, '15000000000', '', 'user_xn5wr3hpsv', '', '2022-02-07 17:54:10', '2022-02-07 17:54:10');
-INSERT INTO `tb_user` VALUES (10, '13200000000', '', 'user_88arndojw9', '', '2022-02-28 10:50:47', '2022-02-28 10:50:47');
+INSERT INTO `tb_user` VALUES (1, '13000000001', '', '小鱼同学', '', '2021-12-24 10:27:19', '2026-06-19 17:46:09');
+INSERT INTO `tb_user` VALUES (2, '13100000000', '', '可可今天不吃肉', '', '2021-12-24 15:14:39', '2026-06-19 17:46:09');
+INSERT INTO `tb_user` VALUES (4, '13200000000', '', 'user_slxaxy2au9f3tanffaxr', '', '2022-01-07 12:07:53', '2026-06-19 17:46:09');
+INSERT INTO `tb_user` VALUES (5, '14400000000', '', '可爱多', '', '2022-01-07 16:11:33', '2026-06-19 17:46:09');
+INSERT INTO `tb_user` VALUES (6, '15000000000', '', 'user_xn5wr3hpsv', '', '2022-02-07 17:54:10', '2026-06-19 17:46:09');
+INSERT INTO `tb_user` VALUES (10, '15100000000', '$2a$10$Yjx1hJCbeugy9jkAiUdQ3OTT5R84PF31CFjEtbifTQ9XB9yrLOV6G', 'user_88arndojw9', '', '2022-02-28 10:50:47', '2026-06-19 22:40:57');
+INSERT INTO `tb_user` VALUES (1010, '19999999999', '$2a$10$Yjx1hJCbeugy9jkAiUdQ3OTT5R84PF31CFjEtbifTQ9XB9yrLOV6G', 'user_EL5Ix6AHxV', '', '2026-06-05 16:14:41', '2026-06-19 17:47:32');
+INSERT INTO `tb_user` VALUES (1012, '17300000000', '', 'user_FhDD9ed9IU', '', '2026-06-08 21:46:33', '2026-06-19 17:47:40');
 
 -- ----------------------------
 -- Table structure for tb_user_info
 -- ----------------------------
 DROP TABLE IF EXISTS `tb_user_info`;
 CREATE TABLE `tb_user_info`  (
-  `user_id` bigint(20) UNSIGNED NOT NULL COMMENT '主键，用户id',
+  `user_id` bigint UNSIGNED NOT NULL COMMENT '主键，用户id',
   `city` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '城市名称',
   `introduce` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '个人介绍，不要超过128个字符',
-  `gender` tinyint(1) UNSIGNED NULL DEFAULT 0 COMMENT '性别，0：男，1：女',
+  `gender` tinyint UNSIGNED NULL DEFAULT 0 COMMENT '性别，0：男，1：女',
   `birthday` date NULL DEFAULT NULL COMMENT '生日',
   `create_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`user_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Compact;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = COMPACT;
 
 -- ----------------------------
 -- Records of tb_user_info
 -- ----------------------------
-INSERT INTO `tb_user_info` VALUES (1010, '', NULL, 0, NULL, '2026-06-02 16:16:59', '2026-06-02 16:27:48');
+INSERT INTO `tb_user_info` VALUES (10, '', NULL, 0, NULL, '2026-06-19 20:53:56', '2026-06-19 20:53:56');
+INSERT INTO `tb_user_info` VALUES (1010, '广州', 'man', 0, '2026-06-05', '2026-06-02 16:16:59', '2026-06-05 22:24:47');
+INSERT INTO `tb_user_info` VALUES (1011, '', NULL, 0, NULL, '2026-06-08 20:31:33', '2026-06-08 20:31:33');
+INSERT INTO `tb_user_info` VALUES (1012, '', NULL, 0, NULL, '2026-06-08 21:46:33', '2026-06-08 21:46:33');
+INSERT INTO `tb_user_info` VALUES (1013, '', NULL, 0, NULL, '2026-06-08 23:28:35', '2026-06-08 23:28:35');
 
 -- ----------------------------
 -- Table structure for tb_voucher
 -- ----------------------------
 DROP TABLE IF EXISTS `tb_voucher`;
 CREATE TABLE `tb_voucher`  (
-  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
-  `shop_id` bigint(20) UNSIGNED NULL DEFAULT NULL COMMENT '商铺id',
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `shop_id` bigint UNSIGNED NULL DEFAULT NULL COMMENT '商铺id',
   `title` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '代金券标题',
   `sub_title` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '副标题',
   `rules` varchar(1024) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '使用规则',
-  `pay_value` bigint(10) UNSIGNED NOT NULL COMMENT '支付金额，单位是分。例如200代表2元',
-  `actual_value` bigint(10) NOT NULL COMMENT '抵扣金额，单位是分。例如200代表2元',
-  `type` tinyint(1) UNSIGNED NOT NULL DEFAULT 0 COMMENT '0,普通券；1,秒杀券',
-  `status` tinyint(1) UNSIGNED NOT NULL DEFAULT 1 COMMENT '1,上架; 2,下架; 3,过期',
+  `pay_value` bigint UNSIGNED NOT NULL COMMENT '支付金额，单位是分。例如200代表2元',
+  `actual_value` bigint NOT NULL COMMENT '抵扣金额，单位是分。例如200代表2元',
+  `type` tinyint UNSIGNED NOT NULL DEFAULT 0 COMMENT '0,普通券；1,秒杀券',
+  `status` tinyint UNSIGNED NOT NULL DEFAULT 1 COMMENT '1,上架; 2,下架; 3,过期',
   `create_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 10 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Compact;
+) ENGINE = InnoDB AUTO_INCREMENT = 13 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = COMPACT;
 
 -- ----------------------------
 -- Records of tb_voucher
 -- ----------------------------
 INSERT INTO `tb_voucher` VALUES (1, 1, '50元代金券', '周一至周日均可使用', '全场通用\\n无需预约\\n可无限叠加\\不兑现、不找零\\n仅限堂食', 4750, 5000, 0, 1, '2022-01-04 09:42:39', '2022-01-04 09:43:31');
 INSERT INTO `tb_voucher` VALUES (10, 1, '100元代金券', '周一至周五均可使用', '全场通用\\n无需预约\\n可无限叠加\\不兑现、不找零\\n仅限堂食', 8000, 10000, 1, 1, '2026-03-12 18:03:03', '2026-03-12 18:03:03');
-INSERT INTO `tb_voucher` VALUES (11, 31, '100元代金券', '周一至周五均可使用', '全场通用\n无需预约\n可无限叠加\\不兑现、不找零\n仅限堂食', 8000, 10000, 1, 1, '2026-05-09 22:54:58', '2026-05-09 22:54:58');
+INSERT INTO `tb_voucher` VALUES (11, 2, '100元代金券', '周一至周五均可使用', '全场通用\n无需预约\n可无限叠加\\不兑现、不找零\n仅限堂食', 8000, 10000, 1, 1, '2026-05-09 22:54:58', '2026-06-05 15:18:15');
+INSERT INTO `tb_voucher` VALUES (12, 1, '100元代金券', '周一至周五均可使用', '全场通用\\n无需预约\\n可无限叠加\\不兑现、不找零\\n仅限堂食', 8000, 10000, 1, 1, '2026-06-05 14:28:49', '2026-06-05 14:28:49');
 
 -- ----------------------------
 -- Table structure for tb_voucher_order
 -- ----------------------------
 DROP TABLE IF EXISTS `tb_voucher_order`;
 CREATE TABLE `tb_voucher_order`  (
-  `id` bigint(20) NOT NULL COMMENT '主键',
-  `user_id` bigint(20) UNSIGNED NOT NULL COMMENT '下单的用户id',
-  `voucher_id` bigint(20) UNSIGNED NOT NULL COMMENT '购买的代金券id',
-  `pay_type` tinyint(1) UNSIGNED NOT NULL DEFAULT 1 COMMENT '支付方式 1：余额支付；2：支付宝；3：微信',
-  `status` tinyint(1) UNSIGNED NOT NULL DEFAULT 1 COMMENT '订单状态，1：未支付；2：已支付；3：已核销；4：已取消；5：退款中；6：已退款',
+  `id` bigint NOT NULL COMMENT '主键',
+  `user_id` bigint UNSIGNED NOT NULL COMMENT '下单的用户id',
+  `voucher_id` bigint UNSIGNED NOT NULL COMMENT '购买的代金券id',
+  `pay_type` tinyint UNSIGNED NOT NULL DEFAULT 1 COMMENT '支付方式 1：余额支付；2：支付宝；3：微信',
+  `status` tinyint UNSIGNED NOT NULL DEFAULT 1 COMMENT '订单状态，1：未支付；2：已支付；3：已核销；4：已取消；5：退款中；6：已退款',
   `create_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '下单时间',
   `pay_time` timestamp NULL DEFAULT NULL COMMENT '支付时间',
   `use_time` timestamp NULL DEFAULT NULL COMMENT '核销时间',
   `refund_time` timestamp NULL DEFAULT NULL COMMENT '退款时间',
   `update_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
-  UNIQUE KEY `uk_user_voucher` (`user_id`, `voucher_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Compact;
+  UNIQUE INDEX `uk_user_voucher`(`user_id` ASC, `voucher_id` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = COMPACT;
 
 -- ----------------------------
 -- Records of tb_voucher_order
 -- ----------------------------
 INSERT INTO `tb_voucher_order` VALUES (297609558228992001, 1010, 10, 1, 1, '2026-03-12 23:57:06', NULL, NULL, NULL, '2026-03-12 23:57:06');
-INSERT INTO `tb_voucher_order` VALUES (319120657117872140, 1010, 11, 1, 1, '2026-05-09 23:11:09', NULL, NULL, NULL, '2026-05-09 23:11:09');
-
+INSERT INTO `tb_voucher_order` VALUES (319120657117872148, 1010, 11, 1, 1, '2026-05-09 23:11:09', NULL, NULL, NULL, '2026-05-09 23:11:09');
+INSERT INTO `tb_voucher_order` VALUES (329008586661298177, 1010, 12, 1, 1, '2026-06-05 14:41:21', NULL, NULL, NULL, '2026-06-05 14:41:21');
+INSERT INTO `tb_voucher_order` VALUES (329048061705715715, 1010, 1, 1, 1, '2026-06-05 17:14:32', NULL, NULL, NULL, '2026-06-05 17:14:32');
 
 SET FOREIGN_KEY_CHECKS = 1;

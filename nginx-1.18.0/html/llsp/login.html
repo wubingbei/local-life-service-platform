@@ -36,7 +36,7 @@
         </div>
         <el-button @click="login" style="width: 100%; background-color:#FF2442; color: #fff;">登录</el-button>
         <div style="text-align: center; margin-top: 15px;">
-          <a href="index.html" style="color: #999; font-size: 13px;">先逛逛，暂不登录</a>
+          <a href="/llsp/index.html" style="color: #999; font-size: 13px;">先逛逛，暂不登录</a>
         </div>
         <div style="text-align: right; color:#333333; margin: 5px 0"><a href="login2.html">密码登录</a></div>
       </div>
@@ -105,12 +105,12 @@
             }
             // 跳转回原页面，没有则跳首页（replace 替换历史记录，避免后退回到登录页）
             var redirect = util.getUrlParam("redirect");
-            location.replace(redirect || "/index.html");
+            location.replace(redirect || "/llsp/index.html");
         })
         .catch(err => this.showError(err))
       },
       goBack(){
-        location.href="index.html";
+        location.href="/llsp/index.html";
       },
       sendCode(){
         if (!this.form.phone) {

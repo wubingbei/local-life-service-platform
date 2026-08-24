@@ -32,10 +32,8 @@ public class ShopController {
      */
     @PostMapping
     public Result saveShop(@RequestBody Shop shop) {
-        // 写入数据库
-        shopService.save(shop);
-        // 返回店铺id
-        return Result.ok(shop.getId());
+        // 写入数据库并同步布隆过滤器
+        return shopService.createShop(shop);
     }
 
     /**

@@ -27,6 +27,7 @@ html,body,#app{
 }
 .foot {
     width: 100%;
+    height: 66px;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -37,7 +38,6 @@ html,body,#app{
     z-index: 100;
     background: #fff;
     flex-wrap: wrap;
-    padding-bottom: env(safe-area-inset-bottom);
 }
 .foot-disclaimer {
     width: 100%;
@@ -51,31 +51,14 @@ html,body,#app{
 }
 /* 独立免责声明（无 foot-bar 的页面使用） */
 .site-disclaimer {
-    height: 16px;
-    line-height: 16px;
+    height: 18px;
+    line-height: 18px;
     font-size: 9px;
     color: #bbb;
     text-align: center;
     background: #f8f8f8;
     flex-shrink: 0;
     border-top: 1px solid #f0f0f0;
-}
-@media screen and (min-width: 768px) {
-    #app {
-        padding-bottom: 84px;
-    }
-    .foot-disclaimer {
-        height: 24px;
-        line-height: 24px;
-        font-size: 13px;
-        color: #999;
-    }
-    .site-disclaimer {
-        height: 24px;
-        line-height: 24px;
-        font-size: 13px;
-        color: #999;
-    }
 }
 .foot-box{
     width: 20%;

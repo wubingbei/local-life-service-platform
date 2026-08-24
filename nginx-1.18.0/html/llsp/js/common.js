@@ -64,7 +64,7 @@ axios.defaults.paramsSerializer = function(params) {
 function requireLogin() {
   if (!sessionStorage.getItem("token")) {
     if (confirm('请先登录后再操作')) {
-      location.href = 'login2.html?redirect=' + encodeURIComponent(location.href);
+      location.href = '/llsp/login2.html?redirect=' + encodeURIComponent(location.href);
     }
     return false;
   }

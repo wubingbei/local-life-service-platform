@@ -10,7 +10,14 @@
   <link href="./css/blog-edit.css?v=20260606" rel="stylesheet">
 
   <style type="text/css">
-
+    .upload-hint {
+      font-size: 11px; color: #B8860B; text-align: center;
+      padding: 4px 15px 0; background: #FFF9E6;
+    }
+    .char-count {
+      display: block; text-align: right; font-size: 11px;
+      color: #ccc; padding: 2px 0;
+    }
   </style>
 </head>
 <body>
@@ -34,11 +41,14 @@
       <i class="el-icon-close" @click.stop="deletePic(i)"></i>
     </div>
   </div>
+  <div class="upload-hint">最多上传 9 张图片，支持 JPG/PNG/GIF 格式，单张不超过 10MB</div>
   <div class="blog-title">
-    <input v-model="params.title" type="text" placeholder="填写标题更容易上首页哦~">
+    <input v-model="params.title" type="text" maxlength="200" placeholder="填写标题更容易上首页哦~">
+    <span class="char-count">{{ (params.title || '').length }}/200</span>
   </div>
   <div class="blog-content">
-    <textarea v-model="params.content" placeholder="最近打卡了什么地方，有什么新奇体验呢？"></textarea>
+    <textarea v-model="params.content" maxlength="5000" placeholder="最近打卡了什么地方，有什么新奇体验呢？"></textarea>
+    <span class="char-count">{{ (params.content || '').length }}/5000</span>
   </div>
   <div class="divider"></div>
   <div v-if="errorMsg" style="color: #f56c6c; font-size: 13px; text-align: center; padding: 8px 15px;">{{ errorMsg }}</div>

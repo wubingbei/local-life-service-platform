@@ -57,3 +57,41 @@ nginx-*/conf/uwsgi_params
 nginx-*/conf/koi-utf
 nginx-*/conf/koi-win
 nginx-*/conf/win-utf
+nginx-*/nginx.exe
+nginx-*/html/
+nginx-*/conf/ssl/
+
+### Runtime & Generated Files ###
+*.log
+*.pid
+*.jar
+logs/
+uploads/
+
+### Workbuddy AI Memory ###
+.workbuddy/
+
+### Frontend Project Internal Files ###
+**/nginx-*/html/**/.gitignore
+
+### OS Files ###
+.DS_Store
+Thumbs.db
+desktop.ini
+
+### Temporary Files ###
+*.tmp
+*.bak
+*.swp
+*~
+
+### Image Files ###
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.bmp
+*.ico
+*.svg
+*.webp
+*.tiff

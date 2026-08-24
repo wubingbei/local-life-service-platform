@@ -5,12 +5,13 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
@@ -22,130 +23,122 @@ import static com.llsp.utils.RedisConstants.*;
 public class CacheClient {
 
     private final StringRedisTemplate stringRedisTemplate;
+    private final ExecutorService cacheRebuildExecutor;
+    private com.llsp.service.CacheStatsService cacheStatsService;
 
-    public CacheClient(StringRedisTemplate stringRedisTemplate) {
+    @Value("${llsp.feature.random-ttl-enabled:true}")
+    private boolean randomTtlEnabled;
+
+    public CacheClient(StringRedisTemplate stringRedisTemplate, ExecutorService cacheRebuildExecutor) {
         this.stringRedisTemplate = stringRedisTemplate;
+        this.cacheRebuildExecutor = cacheRebuildExecutor;
     }
 
-    public void set(String key, Object value, Long time, TimeUnit unit) {
-        stringRedisTemplate.opsForValue().set(key, JSONUtil.toJsonStr(value), time, unit);
+    public void setCacheStatsService(com.llsp.service.CacheStatsService cacheStatsService) {
+        this.cacheStatsService = cacheStatsService;
     }
 
     public void setWithLogicalExpire(String key, Object value, Long time, TimeUnit unit) {
         // 设置逻辑过期
         RedisData redisData = new RedisData();
+        long actualSeconds = randomTtlEnabled ? applyRandomTtlSeconds(time) : time;
+        redisData.setExpireTime(LocalDateTime.now().plusSeconds(actualSeconds));
         redisData.setData(value);
-        redisData.setExpireTime(LocalDateTime.now().plusSeconds(unit.toSeconds(time)));
         // 写入Redis
         stringRedisTemplate.opsForValue().set(key, JSONUtil.toJsonStr(redisData));
     }
 
-    // <R, ID>声明泛型，告诉编译器有哪些占位符，R是返回类型
-    public <R, ID> R queryWithMutex(
-            String keyPrefix, ID id, Class<R> type, Function<ID, R> dbFallback, Long time, TimeUnit unit) {
-
-        String key = keyPrefix + id;
-        log.info("缓存key为：{}", key);
-        // 1.从redis查询缓存
-        String json = stringRedisTemplate.opsForValue().get(key);
-        // 2.判断是否存在
-        if (StrUtil.isNotBlank(json)){
-            // 3.存在，直接返回
-            log.info("缓存命中！");
-            return JSONUtil.toBean(json, type);
+    /**
+     * 给 TTL 秒数加 ±20% 随机偏移，防止缓存雪崩
+     */
+    private long applyRandomTtlSeconds(long seconds) {
+        if (!randomTtlEnabled || seconds <= 0) {
+            return seconds;
         }
-        // 判断命中的是否是空值
-        if (json != null){
+        long offset = ThreadLocalRandom.current().nextLong(-seconds / 5, seconds / 5 + 1);
+        return Math.max(1, seconds + offset);
+    }
+
+    /**
+     * 组合缓存读取：命中走逻辑过期，未命中走互斥锁回填
+     * 统一使用 RedisData 格式，与预热数据格式保持一致
+     */
+    public <R, ID> R queryWithLogicalExpire(
+            String keyPrefix, ID id, Class<R> type, Function<ID, R> dbFallback, Long time, TimeUnit unit) {
+        String key = keyPrefix + id;
+        // 1. 从 Redis 查询缓存
+        String json = stringRedisTemplate.opsForValue().get(key);
+
+        // 2. 命中（key 存在且非空值）
+        if (StrUtil.isNotBlank(json)) {
+            RedisData redisData = JSONUtil.toBean(json, RedisData.class);
+            R r = JSONUtil.toBean((JSONObject) redisData.getData(), type);
+            LocalDateTime expireTime = redisData.getExpireTime();
+            // 2.1 逻辑未过期，直接返回
+            if (expireTime != null && expireTime.isAfter(LocalDateTime.now())) {
+                return r;
+            }
+            // 2.2 逻辑已过期，抢锁异步重建，无论是否抢到锁都返回旧数据
+            String lockKey = LOCK_SHOP_KEY + id;
+            if (trylock(lockKey)) {
+                cacheRebuildExecutor.execute(() -> {
+                    try {
+                        R fresh = dbFallback.apply(id);
+                        if (fresh != null) {
+                            this.setWithLogicalExpire(key, fresh, time, unit);
+                        }
+                    } catch (Exception e) {
+                        log.error("缓存重建失败, key={}", key, e);
+                    } finally {
+                        unLock(lockKey);
+                    }
+                });
+            }
+            // 2.3 返回旧数据（可能稍旧，但不阻塞）
+            return r;
+        }
+
+        // 3. 命中空值（穿透防护标记）
+        if (json != null) {
             return null;
         }
-        // 4.不存在，尝试获取互斥锁
+
+        // 4. 未命中（key 不存在），互斥锁回填
         String lockKey = LOCK_SHOP_KEY + id;
         R r = null;
         try {
             boolean isLock = trylock(lockKey);
-            // 5.判断是否获取成功
+            // 4.1 抢锁失败，短暂休眠后递归重试
             if (!isLock) {
-                // 5.1 获取失败，休眠并重试
                 Thread.sleep(50);
-                return queryWithMutex(keyPrefix, id, type, dbFallback, time, unit);
+                return queryWithLogicalExpire(keyPrefix, id, type, dbFallback, time, unit);
             }
-            // 5.2 获取成功，二次检查缓存
+            // 4.2 抢锁成功，二次检查（双重判定）
             json = stringRedisTemplate.opsForValue().get(key);
             if (StrUtil.isNotBlank(json)) {
-                return JSONUtil.toBean(json, type);
+                RedisData redisData = JSONUtil.toBean(json, RedisData.class);
+                return JSONUtil.toBean((JSONObject) redisData.getData(), type);
             }
             if (json != null) {
                 return null;
             }
-            // 6.根据id查询数据库
-            log.info("缓存未命中，查询数据库");
+            // 4.3 查询数据库
             r = dbFallback.apply(id);
-            // 7.判断数据库是否存在
             if (r == null) {
-                // 将空值写入redis
+                // 写空值防穿透
                 stringRedisTemplate.opsForValue().set(key, "", CACHE_NULL_TTL, TimeUnit.MINUTES);
                 return null;
             }
-            // 8.写入redis
-            this.set(key, r, time, unit);
+            // 4.4 回填（同样用逻辑过期格式，与命中路径统一）
+            this.setWithLogicalExpire(key, r, time, unit);
         } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
             throw new RuntimeException(e);
         } finally {
-            // 9.释放互斥锁
+            // 4.5 释放互斥锁
             unLock(lockKey);
         }
-        // 10.返回
-        return r;
-    }
-
-    private static final ExecutorService executor = Executors.newFixedThreadPool(10);
-
-    public <R, ID> R queryWithLogicalExpire(
-            String keyPrefix, ID id, Class<R> type, Function<ID, R> dbFallback, Long time, TimeUnit unit) {
-        String key = keyPrefix + id;
-        // 1.从redis查询商铺缓存
-        String json = stringRedisTemplate.opsForValue().get(key);
-        // 2.判断是否存在
-        if (StrUtil.isBlank(json)){
-            // 3.不存在，返回为空
-            return null;
-        }
-        // 4.命中，需要先把json反序列化成对象
-        RedisData redisData = JSONUtil.toBean(json, RedisData.class);
-        R r = JSONUtil.toBean((JSONObject) redisData.getData(), type);
-        LocalDateTime expireTime = redisData.getExpireTime();
-        // 5.判断是否过期
-        if (expireTime.isAfter(LocalDateTime.now())){
-            // 5.1未过期，直接返回店铺信息
-            return r;
-        }
-        // 5.2已过期，需要缓存重建
-        // 5.2.1获得互斥锁
-        String lockKey = "lock" + key;
-        boolean isLock = trylock(lockKey);
-        // 5.2.2判断是否获取成功
-        if (isLock) {
-            // 二次检查，处理另一个线程刚把数据写入redis的情况
-            redisData = JSONUtil.toBean(json, RedisData.class);
-            r = JSONUtil.toBean((JSONObject) redisData.getData(), type);
-            expireTime = redisData.getExpireTime();
-            if (expireTime.isAfter(LocalDateTime.now())){
-                return r;
-            }
-            // 5.2.3成功，开启独立线程，实现缓存重建
-            executor.submit(() -> {
-                try {
-                    // 查询数据库
-                    R r1 = dbFallback.apply(id);
-                    this.setWithLogicalExpire(key, r1, time, unit);
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                } finally {
-                    unLock(lockKey);
-                }
-            });
-        }
-        // 5.2.4返回过期的店铺信息
+        // 5. 返回
         return r;
     }
 

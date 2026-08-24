@@ -1,9 +1,5 @@
 package com.llsp.service.impl;
 
-import cn.hutool.core.util.BooleanUtil;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.json.JSONObject;
-import cn.hutool.json.JSONUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -16,9 +12,8 @@ import com.llsp.mapper.ShopCommentsMapper;
 import com.llsp.mapper.ShopMapper;
 import com.llsp.service.IShopService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.llsp.utils.BloomFilterHelper;
 import com.llsp.utils.CacheClient;
-import com.llsp.utils.RedisConstants;
-import com.llsp.utils.RedisData;
 import com.llsp.utils.SystemConstants;
 import org.springframework.data.geo.Distance;
 import org.springframework.data.geo.GeoResult;
@@ -29,12 +24,11 @@ import org.springframework.data.redis.domain.geo.GeoReference;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
+import org.springframework.beans.factory.annotation.Value;
 
-import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -50,9 +44,23 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
     private Cache<Long, Object> shopCache;
     @Resource
     private ShopCommentsMapper shopCommentsMapper;
+    @Resource
+    private com.llsp.service.CacheStatsService cacheStatsService;
+    @Resource
+    private BloomFilterHelper bloomFilterHelper;
+
+    @Value("${llsp.feature.bloom-filter-enabled:true}")
+    private boolean bloomFilterEnabled;
+    @Value("${llsp.feature.hot-preload-enabled:true}")
+    private boolean hotPreloadEnabled;
 
     @Override
     public Result queryById(Long id) {
+        // 0. 布隆过滤器预判（防缓存穿透）
+        if (bloomFilterEnabled && !bloomFilterHelper.mightContain(BLOOM_SHOP_KEY, id)) {
+            cacheStatsService.recordLocalCacheMiss();
+            return Result.fail("店铺不存在");
+        }
         // 一级缓存：Caffeine本地缓存
         Shop shop = getFromLocalCache(id);
         if (shop != null) {
@@ -61,7 +69,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
             return Result.ok(shop);
         }
         // 二级缓存：Redis分布式缓存
-        shop = cacheClient.queryWithMutex(CACHE_SHOP_KEY, id, Shop.class, this::getById, CACHE_SHOP_TTL, TimeUnit.MINUTES);
+        shop = cacheClient.queryWithLogicalExpire(CACHE_SHOP_KEY, id, Shop.class, this::getById, CACHE_SHOP_TTL, TimeUnit.MINUTES);
         if (shop == null) {
             return Result.fail("店铺不存在");
         }
@@ -73,11 +81,29 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
     }
 
     /**
+     * 新增店铺：落库后同步写入布隆过滤器，避免新店铺被误判拦截
+     */
+    @Override
+    @Transactional
+    public Result createShop(Shop shop) {
+        save(shop);
+        if (bloomFilterEnabled) {
+            bloomFilterHelper.addElement(BLOOM_SHOP_KEY, shop.getId());
+        }
+        return Result.ok(shop.getId());
+    }
+
+    /**
      * 从本地缓存中获取数据
      */
     private Shop getFromLocalCache(Long id) {
         Object obj = shopCache.getIfPresent(id);
-        return obj instanceof Shop ? (Shop) obj : null;
+        if (obj instanceof Shop) {
+            cacheStatsService.recordLocalCacheHit();
+            return (Shop) obj;
+        }
+        cacheStatsService.recordLocalCacheMiss();
+        return null;
     }
 
     /**
@@ -92,160 +118,6 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
      */
     private void removeFromLocalCache(Long id) {
         shopCache.invalidate(id);
-    }
-
-    private static final ExecutorService executor = Executors.newFixedThreadPool(10);
-
-    /**
-     * 逻辑过期
-     */
-    private Shop queryWithLogicalExpire(Long id) {
-        // 从redis查询商铺缓存
-        String key = CACHE_SHOP_KEY + id;
-        String shopJson = stringRedisTemplate.opsForValue().get(key);
-        // 判断是否存在
-        if (StrUtil.isBlank(shopJson)){
-            // 不存在，返回空
-            return null;
-        }
-        // 把Json反序列化为对象
-        RedisData redisData = JSONUtil.toBean(shopJson, RedisData.class);
-        Shop shop = JSONUtil.toBean((JSONObject) redisData.getData(), Shop.class);
-        LocalDateTime expireTime = redisData.getExpireTime();
-        // 判断是否过期
-        if (expireTime.isAfter(LocalDateTime.now())){
-            // 未过期，直接返回
-            return shop;
-        }
-        // 已过期，缓存重建
-        // 获取互斥锁
-        String lockKey = LOCK_SHOP_KEY + id;
-        boolean isLock = trylock(lockKey);
-        // 判断是否获取成功
-        if (isLock) {
-            // 二次检查，处理另一个线程刚把数据写入redis的情况
-            redisData = JSONUtil.toBean(shopJson, RedisData.class);
-            shop = JSONUtil.toBean((JSONObject) redisData.getData(), Shop.class);
-            expireTime = redisData.getExpireTime();
-            // 判断是否过期
-            if (expireTime.isAfter(LocalDateTime.now())){
-                // 未过期，直接返回
-                return shop;
-            }
-            // 开启独立线程重建缓存
-            executor.submit(()->{
-                try {
-                    this.saveShop2Redis(id, CACHE_SHOP_TTL);
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                } finally {
-                    unLock(lockKey);
-                }
-            });
-        }
-        // 返回过期商铺
-        return shop;
-    }
-
-    /**
-     * 互斥锁
-     */
-    private Shop queryWithMutex(Long id) {
-        String key = CACHE_SHOP_KEY + id;
-        // 从redis中查询商铺缓存
-        String shopJson = stringRedisTemplate.opsForValue().get(key);
-        // 判断是否存在
-        if (StrUtil.isNotBlank(shopJson)){ // 不是Null，""空值，" "纯空格
-            Shop shop = JSONUtil.toBean(shopJson, Shop.class);
-            return shop;
-        }
-        // 判断是否为空值
-        if (shopJson != null){
-            return null;
-        }
-        // 实现缓存重建
-        // 获取互斥锁
-        String lock = LOCK_SHOP_KEY + id;
-        Shop shop = null;
-        try {
-            boolean isLock = trylock(lock);
-            // 判断是否获取锁成功
-            if (!isLock) {
-                Thread.sleep(50);
-                return queryWithMutex(id);
-            }
-            // 二次检查，处理另一个线程刚把数据写入redis的情况
-            shopJson = stringRedisTemplate.opsForValue().get(key);
-            if (StrUtil.isNotBlank(shopJson)){ // 不是Null，""空值，" "纯空格
-                shop = JSONUtil.toBean(shopJson, Shop.class);
-                return shop;
-            }
-            shop = getById(id);
-            if (shop == null) {
-                stringRedisTemplate.opsForValue().set(key, "", CACHE_NULL_TTL, TimeUnit.MINUTES);
-                return null;
-            }
-            stringRedisTemplate.opsForValue().set(key, JSONUtil.toJsonStr(shop), CACHE_SHOP_TTL, TimeUnit.MINUTES);
-        } catch (InterruptedException e) {
-          throw new RuntimeException(e);
-        } finally {
-            unLock(lock);
-        }
-        return shop;
-    }
-
-    /**
-     * 缓存穿透
-     */
-    private Shop queryWithPassTrough(Long id) {
-        // 1.从redis查询商铺缓存
-        String shopJson = stringRedisTemplate.opsForValue().get(CACHE_SHOP_KEY + id);
-        // 2.判断是否存在
-        if (StrUtil.isNotBlank(shopJson)){
-            // 3.存在，直接返回
-            return JSONUtil.toBean(shopJson, Shop.class);
-        }
-        // 判断命中的是否是空值
-        if (shopJson != null){
-            return null;
-        }
-        // 4.不存在，根据id查询数据库
-        Shop shop = getById(id);
-        // 5.不存在，返回错误
-        if (shop == null) {
-            // 将空值写入redis
-            stringRedisTemplate.opsForValue().set(CACHE_SHOP_KEY + id, "", RedisConstants.CACHE_NULL_TTL, TimeUnit.MINUTES);
-            return null;
-        }
-        // 6.存在，写入redis
-        stringRedisTemplate.opsForValue().set(CACHE_SHOP_KEY + id, JSONUtil.toJsonStr(shop), CACHE_SHOP_TTL, TimeUnit.MINUTES);
-        // 7.返回
-        return shop;
-    }
-
-    private boolean trylock(String key){
-        Boolean success = stringRedisTemplate.opsForValue().setIfAbsent(key, "1", LOCK_SHOP_TTL, TimeUnit.SECONDS);
-        return BooleanUtil.isTrue(success);
-    }
-
-    private void unLock(String key){
-        stringRedisTemplate.delete(key);
-    }
-
-    /**
-     * 将店铺信息保存到redis中，并设置逻辑过期时间
-     * @param id 店铺id
-     * @param expireSeconds 逻辑过期时间，单位秒
-     */
-    private void saveShop2Redis(Long id, Long expireSeconds){
-        // 查询店铺信息
-        Shop shop = getById(id);
-        // 封装进RedisData
-        RedisData redisData = new RedisData();
-        redisData.setData(shop);
-        redisData.setExpireTime(LocalDateTime.now().plusSeconds(expireSeconds));
-        // 保存到redis
-        stringRedisTemplate.opsForValue().set(CACHE_SHOP_KEY + id, JSONUtil.toJsonStr(redisData));
     }
 
     @Override
@@ -394,5 +266,37 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
         Page<Shop> result = page(page, wrapper);
         
         return Result.ok(result.getRecords());
+    }
+
+    /**
+     * 启动时预热热门店铺到本地缓存和 Redis
+     * 确保系统冷启动时缓存不为空，避免首波请求全部穿透到 DB
+     */
+    @PostConstruct
+    public void preloadHotShops() {
+        if (!hotPreloadEnabled) {
+            log.debug("热点预热功能已关闭 (llsp.feature.hot-preload-enabled=false)");
+            return;
+        }
+        try {
+            List<Shop> hotShops = query()
+                    .orderByDesc("sold")
+                    .last("LIMIT 50")
+                    .list();
+            if (hotShops == null || hotShops.isEmpty()) {
+                log.debug("没有需要预热的热门店铺");
+                return;
+            }
+            for (Shop shop : hotShops) {
+                // 写入 Caffeine 本地缓存
+                shopCache.put(shop.getId(), shop);
+                // 写入 Redis（逻辑过期模式，分散 TTL 防雪崩）
+                cacheClient.setWithLogicalExpire(
+                        CACHE_SHOP_KEY + shop.getId(), shop, CACHE_SHOP_TTL, TimeUnit.MINUTES);
+            }
+            log.debug("预热完成，已加载 " + hotShops.size() + " 个热门店铺到缓存");
+        } catch (Exception e) {
+            log.error("热点预热失败（不影响正常服务）", e);
+        }
     }
 }

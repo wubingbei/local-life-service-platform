@@ -47,15 +47,6 @@ body {
     text-align: center;
     font-size: 12px;
 }
-.tips-bar {
-    padding: 8px 12px;
-    background-color: #fff8f0;
-    border-bottom: 1px solid #ffe8d9;
-    text-align: center;
-    font-size: 11px;
-    color: #ff6b35;
-    flex-shrink: 0;
-}
 .shop-list{
     flex: 1;
     min-height: 0;
@@ -162,4 +153,37 @@ body {
     }
     .shop-title { font-size: 14px; }
     .shop-address span { font-size: 11px; }
+    .empty-state { padding: 80px 20px; }
+    .empty-state .empty-icon,
+    .empty-state .empty-icon i { font-size: 64px; }
+    .empty-state .empty-text { font-size: 16px; }
+    .empty-state .empty-sub { font-size: 13px; }
+}
+
+/* 空状态 / 加载中 */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    color: #999;
+}
+.empty-state .empty-icon {
+    font-size: 56px;
+    color: #ddd;
+    margin-bottom: 16px;
+    line-height: 1;
+}
+.empty-state .empty-icon i {
+    font-size: 56px;
+}
+.empty-state .empty-text {
+    font-size: 15px;
+    color: #6f6f71;
+    margin-bottom: 6px;
+}
+.empty-state .empty-sub {
+    font-size: 12px;
+    color: #b5b5b5;
 }

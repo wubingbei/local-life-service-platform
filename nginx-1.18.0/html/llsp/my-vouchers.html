@@ -18,10 +18,14 @@
     .header-title { width: 80%; text-align: center; font-size: 18px;
       font-family: -apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Helvetica Neue",Helvetica,Arial,sans-serif; }
     .header-placeholder { width: 10%; }
+    .tips-bar {
+      margin: 8px 16px; padding: 10px 12px; background: #FFF9E6; border-radius: 8px;
+      font-size: 12px; color: #B8860B; line-height: 1.5; text-align: center;
+    }
     .voucher-scroll { flex: 1; overflow-y: auto; padding-bottom: 10px; }
     .voucher-card {
-      background: #fff; border-radius: 12px; margin: 12px 16px;
-      padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      background: #fff; border-radius: 10px; margin: 8px 16px;
+      padding: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);
       position: relative; overflow: hidden;
     }
     .voucher-card::before {
@@ -29,13 +33,14 @@
       width: 4px; height: 100%;
       background: linear-gradient(180deg, #FF2442, #FF6B6B);
     }
-    .voucher-shop { font-size: 13px; color: #999; margin-bottom: 6px; }
-    .voucher-title { font-size: 17px; font-weight: 600; color: #333; margin-bottom: 4px; }
-    .voucher-subtitle { font-size: 12px; color: #999; margin-bottom: 12px; }
-    .voucher-price-row { display: flex; align-items: baseline; margin-bottom: 10px; }
-    .voucher-value { font-size: 28px; font-weight: 700; color: #FF2442; }
-    .voucher-value span { font-size: 14px; }
-    .voucher-pay { font-size: 13px; color: #999; margin-left: 8px; }
+    .voucher-shop { font-size: 12px; color: #999; margin-bottom: 4px; }
+    .voucher-title { font-size: 15px; font-weight: 600; color: #333; margin-bottom: 2px; }
+    .voucher-subtitle { font-size: 11px; color: #999; margin-bottom: 8px; }
+    .voucher-price-row { display: flex; align-items: baseline; margin-bottom: 6px; }
+    .voucher-value { font-size: 22px; font-weight: 700; color: #FF2442; }
+    .voucher-value span { font-size: 12px; }
+    .voucher-pay { font-size: 12px; color: #999; margin-left: 6px; }
+    .voucher-order-no { font-size: 11px; color: #bbb; margin-bottom: 4px; }
     .voucher-pay del { margin-right: 4px; }
     .voucher-status {
       display: inline-block; padding: 2px 8px; border-radius: 4px;
@@ -45,8 +50,8 @@
     .status-2 { background: #E8F5E9; color: #4CAF50; }
     .status-3 { background: #E3F2FD; color: #2196F3; }
     .status-4 { background: #F5F5F5; color: #999; }
-    .voucher-rules { font-size: 12px; color: #999; line-height: 1.5; padding-top: 8px; border-top: 1px dashed #eee; }
-    .voucher-time { font-size: 12px; color: #ccc; margin-top: 6px; }
+    .voucher-rules { font-size: 11px; color: #999; line-height: 1.5; padding-top: 6px; border-top: 1px dashed #eee; }
+    .voucher-time { font-size: 11px; color: #ccc; margin-top: 4px; }
     .empty-page {
       display: flex; flex-direction: column; align-items: center;
       justify-content: center; height: 60vh; color: #999;
@@ -64,6 +69,8 @@
     <div class="header-placeholder"></div>
   </div>
 
+  <div class="tips-bar">⚠️ 温馨提示：网站内所有优惠券均为虚拟物品，不具备真实效果，无真实交易、无支付功能。</div>
+
   <div class="voucher-scroll">
   <div v-if="loading" style="text-align:center;padding:40px;color:#999;">加载中...</div>
 
@@ -76,13 +83,14 @@
   <div v-else>
     <div class="voucher-card" v-for="v in vouchers" :key="v.orderId">
       <div class="voucher-shop">{{v.shopName}}</div>
+      <div class="voucher-order-no">订单号：{{v.orderId}}</div>
       <div class="voucher-title">{{v.title}}</div>
       <div class="voucher-subtitle" v-if="v.subTitle">{{v.subTitle}}</div>
       <div class="voucher-price-row">
         <div class="voucher-value"><span>¥</span>{{util.formatPrice(v.actualValue)}}</div>
         <div class="voucher-pay"><del>¥{{util.formatPrice(v.payValue)}}</del> 面值</div>
       </div>
-      <div style="font-size:12px;color:#999;margin-bottom:10px;">
+      <div style="font-size:11px;color:#999;margin-bottom:6px;">
         实付 <span style="color:#FF2442;">¥{{util.formatPrice(v.payValue)}}</span>，立省 <span style="color:#FF2442;">¥{{util.formatPrice(v.actualValue - v.payValue)}}</span>
       </div>
       <div class="voucher-status" :class="'status-' + (v.status || 0)">

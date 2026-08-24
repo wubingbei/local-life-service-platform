@@ -4,6 +4,8 @@ package com.llsp.controller;
 import com.llsp.dto.Result;
 import com.llsp.entity.Blog;
 import com.llsp.service.IBlogService;
+import com.llsp.utils.UserHolder;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.annotation.Resource;
@@ -13,10 +15,16 @@ import jakarta.annotation.Resource;
 public class BlogController {
     @Resource
     private IBlogService blogService;
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
 
 
     @PostMapping
     public Result saveBlog(@RequestBody Blog blog) {
+        Long userId = UserHolder.getUser().getId();
+        if (!Boolean.TRUE.equals(stringRedisTemplate.opsForSet().isMember("whitelist:post", userId.toString()))) {
+            return Result.fail("暂无发布权限");
+        }
         return blogService.saveBlog(blog);
     }
 
