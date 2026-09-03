@@ -10,7 +10,7 @@ public interface IVoucherOrderService extends IService<VoucherOrder> {
 
     Result buyRegularVoucher(Long voucherId);
 
-    void createVoucherOrder(VoucherOrder voucherOrder);
+    boolean createVoucherOrder(VoucherOrder voucherOrder);
 
     Result queryMyVouchers();
 }

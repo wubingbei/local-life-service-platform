@@ -22,7 +22,7 @@ public class OutboxMessage {
     private Long id;
 
     /**
-     * 消息唯一标识（UUID），用于幂等去重
+     * 消息唯一标识（UUID），用于 Publisher Confirm 关联与 Outbox 去重
      */
     private String messageId;
 

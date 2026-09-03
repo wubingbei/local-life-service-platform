@@ -2,6 +2,7 @@ package com.llsp.aop;
 
 import com.llsp.annotation.RateLimit;
 import com.llsp.dto.Result;
+import com.llsp.utils.UserHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -40,11 +41,20 @@ public class RateLimitAspect {
             return joinPoint.proceed();
         }
 
-        String limitKey = resolveKey(joinPoint, rateLimit);
-        if (!tryAcquire(limitKey, rateLimit)) {
-            // 限流触发
-            log.warn("限流触发 - key={}, rate={}/{}s", limitKey, rateLimit.rate(), rateLimit.interval());
+        String globalKey = resolveKey(joinPoint, rateLimit);
+        // 1. 全局限流：保护系统整体
+        if (!tryAcquire(globalKey, rateLimit.rate(), rateLimit)) {
+            log.warn("全局限流触发 - key={}, rate={}/{}s", globalKey, rateLimit.rate(), rateLimit.interval());
             return Result.fail(rateLimit.message());
+        }
+
+        // 2. 每用户限流：防单用户/脚本刷
+        if (rateLimit.perUserRate() > 0) {
+            String userKey = globalKey + ":" + resolveUserId();
+            if (!tryAcquire(userKey, rateLimit.perUserRate(), rateLimit)) {
+                log.warn("每用户限流触发 - key={}, rate={}/{}s", userKey, rateLimit.perUserRate(), rateLimit.interval());
+                return Result.fail("操作过于频繁，请稍后再试");
+            }
         }
 
         return joinPoint.proceed();
@@ -68,13 +78,15 @@ public class RateLimitAspect {
      * 尝试获取令牌
      * Redis 异常时返回 true（fail-open 策略）
      */
-    private boolean tryAcquire(String key, RateLimit rateLimit) {
+    private boolean tryAcquire(String key, double rate, RateLimit rateLimit) {
         try {
             RRateLimiter limiter = redissonClient.getRateLimiter(key);
             // 首次使用时初始化限流器
+            // rate 为 double（支持 perUserRate=0.5 这类配置），强转 long 会截断成 0 导致全量拒绝，
+            // 故向上取整到至少 1。
             if (!limiter.isExists()) {
                 limiter.trySetRate(RateType.OVERALL,
-                        (long) rateLimit.rate(),
+                        Math.max(1L, Math.round(rate)),
                         rateLimit.interval(),
                         toRateIntervalUnit(rateLimit.timeUnit()));
             }
@@ -84,6 +96,20 @@ public class RateLimitAspect {
             log.error("令牌桶限流异常，降级放行 - key={}", key, e);
             return true;
         }
+    }
+
+    /**
+     * 获取当前用户 id，未登录时降级为 anonymous（避免 NPE）
+     */
+    private String resolveUserId() {
+        try {
+            if (UserHolder.getUser() != null && UserHolder.getUser().getId() != null) {
+                return String.valueOf(UserHolder.getUser().getId());
+            }
+        } catch (Exception e) {
+            // 忽略，降级为 anonymous
+        }
+        return "anonymous";
     }
 
     /**

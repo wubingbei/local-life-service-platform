@@ -23,6 +23,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.annotation.Resource;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 
 import static com.llsp.utils.RedisConstants.SECKILL_STOCK_KEY;
@@ -30,6 +32,13 @@ import static com.llsp.utils.RedisConstants.SECKILL_STOCK_KEY;
 @Service
 @Slf4j
 public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, VoucherOrder> implements IVoucherOrderService {
+
+    /**
+     * 业务时区。JDBC 连接串为 serverTimezone=UTC，若用 JVM 默认时区，
+     * 部署到 UTC 容器后时间窗判定会偏 8 小时，故显式指定。
+     * 与 ReconciliationServiceImpl.BIZ_ZONE 保持一致。
+     */
+    private static final ZoneId BIZ_ZONE = ZoneId.of("Asia/Shanghai");
 
     @Resource
     private ISeckillVoucherService seckillVoucherService;
@@ -63,13 +72,20 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
     public Result seckillVoucher(Long voucherId) {
         // 获取用户
         Long userId = UserHolder.getUser().getId();
-        // 确保Redis中有库存数据
+        // 校验秒杀券类型 + 时间窗（秒杀券才有 tb_seckill_voucher 记录，天然等价 type==1 校验）
+        SeckillVoucher sv = seckillVoucherService.getById(voucherId);
+        if (sv == null) {
+            return Result.fail("不是秒杀券");
+        }
+        LocalDateTime now = LocalDateTime.now(BIZ_ZONE);
+        if (sv.getBeginTime() == null || sv.getEndTime() == null
+                || now.isBefore(sv.getBeginTime()) || now.isAfter(sv.getEndTime())) {
+            return Result.fail("不在秒杀时间范围内");
+        }
+        // 幂等预热库存（原子 setIfAbsent，替代三步非原子 set）
         String stockKey = SECKILL_STOCK_KEY + voucherId;
-        if (!stringRedisTemplate.hasKey(stockKey)) {
-            SeckillVoucher sv = seckillVoucherService.getById(voucherId);
-            if (sv != null && sv.getStock() != null) {
-                stringRedisTemplate.opsForValue().set(stockKey, sv.getStock().toString());
-            }
+        if (sv.getStock() != null) {
+            stringRedisTemplate.opsForValue().setIfAbsent(stockKey, sv.getStock().toString());
         }
         // 执行lua脚本
         Long result = stringRedisTemplate.execute(
@@ -131,9 +147,10 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
      * 检查是否重复购买(一人一单)
      * 扣减库存(乐观锁:stock > 0)
      * 保存订单到数据库
+     * @return true 建单成功；false 因重复下单或库存不足而跳过（调用方可据此计数）
      */
     @Transactional
-    public void createVoucherOrder(VoucherOrder voucherOrder) {
+    public boolean createVoucherOrder(VoucherOrder voucherOrder) {
         // 获取用户id和优惠券id
         Long voucherId = voucherOrder.getVoucherId();
         Long userId = voucherOrder.getUserId();
@@ -141,8 +158,8 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
         Long count = query().eq("user_id", userId).eq("voucher_id", voucherId).count();
         if (count > 0) {
             // count > 0,说明用户重复下单
-            log.error("用户已经购买过一次!");
-            return;
+            log.warn("用户已购买过，跳过下单 - userId={}, voucherId={}", userId, voucherId);
+            return false;
         }
         // 扣减库存
         boolean success = seckillVoucherService.update()
@@ -150,14 +167,16 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
                 .gt("stock", 0).update();
         // 判断是否成功
         if (!success) {
-            log.error("库存不足!");
-            return;
+            log.error("库存不足，下单失败 - voucherId={}, userId={}", voucherId, userId);
+            return false;
         }
         // 保存订单（唯一索引兜底）
         try {
             save(voucherOrder);
+            return true;
         } catch (DataIntegrityViolationException e) {
             log.error("用户 {} 重复购买优惠券 {}", userId, voucherId);
+            throw e; // 冒泡触发事务回滚，回滚已扣减的库存
         }
     }
 

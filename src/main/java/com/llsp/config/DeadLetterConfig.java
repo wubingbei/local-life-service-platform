@@ -1,7 +1,6 @@
 package com.llsp.config;
 
 import org.springframework.amqp.core.*;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -21,9 +20,6 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration
 public class DeadLetterConfig {
-
-    @Value("${llsp.feature.dead-letter-enabled:true}")
-    private boolean deadLetterEnabled;
 
     // ==================== 交换机 ====================
 
@@ -107,14 +103,9 @@ public class DeadLetterConfig {
      */
     @Bean
     public Queue seckillWorkQueue() {
-        if (deadLetterEnabled) {
-            return QueueBuilder.durable("seckill.queue")
-                    .deadLetterExchange("seckill.dlx")  // 失败消息路由到 DLX
-                    .deadLetterRoutingKey("seckill.retry.1")
-                    .build();
-        } else {
-            return QueueBuilder.durable("seckill.queue").build();
-        }
+        // 队列级 DLX 已移除：重试/死信由 SeckillListener 手动路由（三级指数退避），
+        // 队列级 DLX 因消息从不 nack/reject 而永不触发，属冗余双路径
+        return QueueBuilder.durable("seckill.queue").build();
     }
 
     @Bean

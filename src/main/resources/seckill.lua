@@ -8,8 +8,9 @@ local stockKey = 'seckill:stock:' .. voucherId
 -- 订单key
 local orderKey = 'seckill:order:' .. voucherId
 
--- 判断库存是否充足
-if (tonumber(redis.call("get", stockKey)) <= 0) then
+-- 判断库存是否充足（key 不存在时 get 返回 false，tonumber(false)=nil，需容错）
+local stock = tonumber(redis.call("get", stockKey))
+if (not stock or stock <= 0) then
     return 1
 end
 -- 判断用户是否下单

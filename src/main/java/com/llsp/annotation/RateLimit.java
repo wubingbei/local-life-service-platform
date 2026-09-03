@@ -35,6 +35,11 @@ public @interface RateLimit {
     String key() default "";
 
     /**
+     * 每用户每秒允许的请求数，0 表示不启用每用户限流
+     */
+    double perUserRate() default 0;
+
+    /**
      * 限流触发时返回的错误信息
      */
     String message() default "操作过于频繁，请稍后再试";

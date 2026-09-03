@@ -143,35 +143,41 @@ public class OutboxRelayService {
      * 处理单条消息的补发
      */
     private void processRelay(OutboxMessage msg) {
-        try {
-            // 超过最大重试次数，标记为失败
-            if (msg.getRetryCount() >= msg.getMaxRetries()) {
-                outboxMessageMapper.markAsFailed(msg.getId(),
-                        "超过最大重试次数 " + msg.getMaxRetries());
-                log.error("Outbox 消息重试耗尽 - messageId={}, orderId={}, retryCount={}",
-                        msg.getMessageId(), msg.getOrderId(), msg.getRetryCount());
-                return;
-            }
+        // 超过最大重试次数，标记为失败
+        if (msg.getRetryCount() >= msg.getMaxRetries()) {
+            outboxMessageMapper.markAsFailed(msg.getId(),
+                    "超过最大重试次数 " + msg.getMaxRetries());
+            log.error("Outbox 消息重试耗尽 - messageId={}, orderId={}, retryCount={}",
+                    msg.getMessageId(), msg.getOrderId(), msg.getRetryCount());
+            return;
+        }
 
-            // 重新发送 MQ
+        try {
+            // 重新发送 MQ（带 correlationData，由 ConfirmCallback.markAsSentByMessageId 标记已发送）
             Object payload = JSONUtil.parse(msg.getPayload());
             CorrelationData correlationData = new CorrelationData(msg.getMessageId());
             rabbitTemplate.convertAndSend(msg.getExchange(), msg.getRoutingKey(),
                     payload, correlationData);
 
-            // 乐观标记为已发送（确认失败由下次定时任务兜底）
-            outboxMessageMapper.markAsSent(msg.getId());
-
-            log.info("Outbox 补发成功 - messageId={}, orderId={}", msg.getMessageId(), msg.getOrderId());
+            log.debug("Outbox 补发已提交 - messageId={}, orderId={}",
+                    msg.getMessageId(), msg.getOrderId());
 
         } catch (Exception e) {
-            // 发送失败，更新重试信息（指数退避）
-            long delay = calculateBackoffDelay(msg.getRetryCount() + 1);
-            LocalDateTime nextRetry = LocalDateTime.now().plusSeconds(delay / 1000);
-            outboxMessageMapper.updateRetryInfo(msg.getId(), nextRetry);
+            log.warn("Outbox 补发异常 - messageId={}, error={}", msg.getMessageId(), e.getMessage());
 
-            log.warn("Outbox 补发失败 - messageId={}, retryCount={}, nextRetry={}, error={}",
-                    msg.getMessageId(), msg.getRetryCount() + 1, nextRetry, e.getMessage());
+        } finally {
+            // 无论 confirm 结果如何，都必须递增重试计数并推后下次重试时间，否则会无限重发：
+            //   ack  -> ConfirmCallback 把 status 置为 1，本条不再被扫描，retryCount 无副作用
+            //   nack -> convertAndSend 不抛异常，retryCount 递增 + 指数退避，到 maxRetries 后收敛为 FAILED
+            //   异常 -> 同样递增，下一轮扫描时先走上面的 maxRetries 判断决定是否收敛
+            try {
+                long delay = calculateBackoffDelay(msg.getRetryCount() + 1);
+                outboxMessageMapper.updateRetryInfo(msg.getId(),
+                        LocalDateTime.now().plusSeconds(delay / 1000));
+            } catch (Exception e) {
+                // 计数更新失败不能影响主流程，交由下一轮扫描兜底
+                log.error("Outbox 重试信息更新失败 - messageId={}", msg.getMessageId(), e);
+            }
         }
     }
 

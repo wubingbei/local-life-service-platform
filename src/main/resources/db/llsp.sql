@@ -161,7 +161,7 @@ INSERT INTO `tb_follow` VALUES (10, 1010, 2, '2026-06-09 15:08:11');
 DROP TABLE IF EXISTS `tb_outbox_message`;
 CREATE TABLE `tb_outbox_message`  (
   `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
-  `message_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '消息唯一标识(UUID)，幂等去重',
+  `message_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '消息唯一标识(UUID)，用于 Publisher Confirm 关联',
   `exchange` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT 'RabbitMQ 交换机名称',
   `routing_key` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT 'RabbitMQ 路由键',
   `payload` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '消息体(JSON格式)',
